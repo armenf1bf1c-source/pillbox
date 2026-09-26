@@ -647,7 +647,7 @@ function bleSend(line) {
   }).catch(e => console.warn('BLE write', e));
 }
 const devDose = c => clip(doseText(c), 46);
-const cellLine = (c, i) => `CELL|${i + 1}|${c.form}|FFFFFF|${clip(c.name, 70)}|${devDose(c)}|${clip(instr(c), 250)}`;
+const cellLine = (c, i) => `CELL|${i + 1}|${c.form}|FFFFFF|${clip(c.name, 70)}|${devDose(c)}|${clip(instr(c), 620)}`;
 function dayLine() {
   return 'DAY|' + todayDoses().slice(0, 16).map(d => {
     const s = stOf(d); let c = s.s === 'x' ? 'w' : s.s;
@@ -1021,7 +1021,7 @@ function vEditor() {
   }
   if (flags.length) h += flags.map(f => `<button class="tog" data-flag="${f}"><span><b>${flagName(f)}</b></span><span class="sw${c.flags[f] ? ' on' : ''}"><i></i></span></button>`).join('');
   h += `<div class="lab"><label for="fNote">${L('Note', 'Заметка')}</label><em>${L('optional', 'если нужно')}</em></div>
-    <textarea class="inp" id="fNote" rows="2" maxlength="120" placeholder="${L('e.g. Not with milk.', 'Например, не запивать молоком.')}">${esc(note)}</textarea>
+    <textarea class="inp" id="fNote" rows="3" maxlength="400" placeholder="${L('e.g. Not with milk.', 'Например, не запивать молоком.')}">${esc(note)}</textarea>
     <div class="lab">${L('Times', 'Время приёма')}<em>${c.times.length} ${L(c.times.length === 1 ? 'time a day' : 'times a day', ruPl(c.times.length, ['раз', 'раза', 'раз']) + ' в день')}</em></div>
     <div class="card times">${c.times.map((t, k) => `<div class="tr"><button class="tb" data-edittime="${k}"><b>${t}</b><span>${L('change', 'изменить')}</span></button><button class="del" data-deltime="${k}">${L('Remove', 'Убрать')}</button></div>`).join('') || `<p class="cp" style="padding:12px 0">${L('No times yet.', 'Время пока не задано.')}</p>`}</div>
     <div class="addt"><button class="btn" id="addTime">+ ${L('Add time', 'Добавить время')}</button></div>
