@@ -180,7 +180,10 @@ textarea.inp{font-size:13px;line-height:1.45;resize:none;min-height:60px}
 .step{display:flex;align-items:center}
 .step button{width:50px;height:50px;border:2px solid var(--ink);border-radius:var(--r);background:var(--card);font-size:22px;font-weight:800;cursor:pointer}
 .step button:active{background:var(--ink);color:#fff}
-.step output{min-width:64px;text-align:center;font-size:30px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.step .amtbtn{min-width:78px;height:50px;padding:0 6px;border:0;background:none;cursor:pointer;text-align:center;font-size:30px;font-weight:800;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums;text-decoration:underline dotted 2px;text-decoration-color:var(--red);text-underline-offset:7px}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.picker .wheel.narrow{width:56px}
 .step .unit{margin-left:10px;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
 .chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .chips.c3{grid-template-columns:repeat(3,1fr)}
@@ -991,7 +994,8 @@ function vEditor() {
     <input class="inp big" id="fName" maxlength="40" autocomplete="off" value="${esc(c.name)}" placeholder="${L('e.g. Aspirin Cardio', 'Например, Аспирин Кардио')}">
     <div class="lab">${L('Dose', 'Доза')}<em>${L('each time', 'за один приём')}</em></div>
     ${c.form === 'powder' ? `<div class="chips" style="margin-bottom:8px">${[['0', L('Sachets', 'Пакетики')], ['1', L('Grams', 'Граммы')]].map(([v, n]) => `<button data-gunit="${v}" class="${(isG(c) ? '1' : '0') === v ? 'on' : ''}" aria-pressed="${(isG(c) ? '1' : '0') === v}">${n}</button>`).join('')}</div>` : ''}
-    <div class="step"><button data-amt="-1" aria-label="${L('Less', 'Меньше')}">−</button><output id="amt">${amtText(c)}</output><button data-amt="1" aria-label="${L('More', 'Больше')}">+</button><span class="unit">${unitOf(c)}</span></div>
+    <div class="step"><button data-amt="-1" aria-label="${L('Less', 'Меньше')}">−</button><button class="amtbtn" id="amtBtn" aria-label="${L('Choose the dose', 'Выбрать дозу')}">${amtText(c)}</button><button data-amt="1" aria-label="${L('More', 'Больше')}">+</button><span class="unit">${unitOf(c)}</span></div>
+    <p class="hint">${L('Tap the number to choose quickly.', 'Нажмите на число, чтобы выбрать быстро.')}</p>
     <div class="lab">${L('How to take', 'Как принимать')}<em>${formName(c.form).toLowerCase()}</em></div>
     <div class="chips">${METHODS[c.form].map(m => `<button data-method="${m}" class="${c.method === m ? 'on' : ''}" aria-pressed="${c.method === m}">${methodName(m)}</button>`).join('')}</div>`;
   if (wopt.length) h += `<div class="lab">${L('Water', 'Вода')}</div><div class="chips ${wopt.length === 3 ? 'c3' : ''}">${wopt.map(w => `<button data-water="${w}" class="${c.water === w ? 'on' : ''}" aria-pressed="${c.water === w}">${waterName(w)}</button>`).join('')}</div>`;
@@ -1018,20 +1022,37 @@ function vEditor() {
   return h;
 }
 
-/* выбор времени: два колеса, как на iPhone */
+/* колёса выбора, как на iPhone: время (часы : минуты) или доза (например, граммы 0–500 и половинка) */
 const ITEM = 48;
+const range = n => Array.from({ length: n }, (_, k) => k);
 const PRESETS = () => [['08:00', L('Morning', 'Утро')], ['13:00', L('Noon', 'День')], ['19:00', L('Evening', 'Вечер')], ['22:00', L('Night', 'Ночь')]];
+const G_PRESETS = [2.5, 5, 10, 100];
+function pickerCols() {
+  if (picker.kind === 'time') return [{ id: 'wH', key: 'h', vals: range(24).map(k => String(k).padStart(2, '0')), label: L('Hours', 'Часы') }, ':',
+                                      { id: 'wM', key: 'm', vals: range(60).map(k => String(k).padStart(2, '0')), label: L('Minutes', 'Минуты') }];
+  const c = draft.c;
+  if (isG(c)) return [{ id: 'wA', key: 'a', vals: range(501).map(String), label: L('Grams', 'Граммы') }, lang === 'ru' ? ',' : '.',
+                      { id: 'wB', key: 'b', vals: ['0', '5'], label: L('Tenths', 'Десятые'), narrow: 1 }, L('g', 'г')];
+  if (c.form === 'tablet') return [{ id: 'wA', key: 'a', vals: range(21).map(String), label: L('Tablets', 'Таблетки') },
+                                   { id: 'wB', key: 'b', vals: ['', '½'], label: L('Half', 'Половинка'), narrow: 1 }];
+  return [{ id: 'wA', key: 'a', vals: range(c.form === 'drops' ? 61 : 21).map(String), label: L('Amount', 'Количество') }];
+}
 function vPicker() {
-  const col = (n, id) => `<div class="wheel" id="${id}" tabindex="0" aria-label="${id === 'wH' ? L('Hours', 'Часы') : L('Minutes', 'Минуты')}"><div class="pad"></div>${Array.from({ length: n }, (_, k) => `<div>${String(k).padStart(2, '0')}</div>`).join('')}<div class="pad"></div></div>`;
-  return `<div class="dim" id="pDim"></div><div class="sheet picker" role="dialog" aria-label="${L('Choose time', 'Выбор времени')}">
-    <div class="eyebrow">${picker.idx < 0 ? L('Add time', 'Новое время') : L('Change time', 'Изменить время')}</div>
-    <div class="presets">${PRESETS().map(p => `<button data-preset="${p[0]}">${p[1]}<small>${p[0]}</small></button>`).join('')}</div>
-    <div class="wheels" id="wheels"><div class="wbar"></div>${col(24, 'wH')}<div class="colon">:</div>${col(60, 'wM')}</div>
+  const time = picker.kind === 'time';
+  const wheels = pickerCols().map(col => typeof col === 'string' ? `<div class="colon">${col}</div>`
+    : `<div class="wheel${col.narrow ? ' narrow' : ''}" id="${col.id}" tabindex="0" aria-label="${col.label}"><div class="pad"></div>${col.vals.map(v => `<div>${v || '&nbsp;'}</div>`).join('')}<div class="pad"></div></div>`).join('');
+  const presets = time ? PRESETS().map(p => `<button data-preset="${p[0]}">${p[1]}<small>${p[0]}</small></button>`).join('')
+    : isG(draft.c) ? G_PRESETS.map(g => `<button data-gpreset="${g}">${L('Quick', 'Быстро')}<small>${fmtG(g)} ${L('g', 'г')}</small></button>`).join('') : '';
+  const title = time ? (picker.idx < 0 ? L('Add time', 'Новое время') : L('Change time', 'Изменить время')) : L('Dose', 'Доза') + ' · ' + (isG(draft.c) ? L('grams', 'граммы') : formName(draft.c.form).toLowerCase());
+  return `<div class="dim" id="pDim"></div><div class="sheet picker" role="dialog" aria-label="${title}">
+    <div class="eyebrow">${title}</div>
+    ${presets ? `<div class="presets">${presets}</div>` : ''}
+    <div class="wheels" id="wheels"><div class="wbar"></div>${wheels}</div>
     <div class="note err" id="pErr">${picker.err || ''}</div>
     <div class="acts" style="margin-top:6px"><button class="btn" id="pCancel">${L('Cancel', 'Отмена')}</button><button class="btn pri" id="pOk">OK</button></div></div>`;
 }
 function setupWheels() {
-  [['wH', 'h'], ['wM', 'm']].forEach(([id, key]) => {
+  pickerCols().filter(c => typeof c !== 'string').forEach(({ id, key }) => {
     const el = document.getElementById(id); if (!el) return;
     el.scrollTop = picker[key] * ITEM;
     const mark = () => { const i = Math.round(el.scrollTop / ITEM); picker[key] = Math.max(0, Math.min(el.children.length - 3, i));
@@ -1046,7 +1067,16 @@ function setupWheels() {
     el.addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); el.scrollTo({ top: (picker[key] + (e.key === 'ArrowDown' ? 1 : -1)) * ITEM, behavior: 'smooth' }); } });
   });
 }
-function openPicker(idx) {
+/* прокрутить колесо к значению: рядом — плавно, далеко — сразу */
+function wheelTo(id, i) {
+  const el = document.getElementById(id); if (!el) return;
+  el.scrollTo({ top: i * ITEM, behavior: Math.abs(el.scrollTop - i * ITEM) > 12 * ITEM ? 'auto' : 'smooth' });
+}
+const maxAmt = c => isG(c) ? 500 : c.form === 'drops' ? 60 : 20;
+function openAmountPicker() {
+  const c = draft.c;
+  picker = { kind: 'amount', a: Math.floor(c.amount), b: c.amount % 1 ? 1 : 0, err: '' };
+}function openPicker(idx) {
   const c = draft.c;
   let t = idx >= 0 ? c.times[idx] : null;
   if (!t) {                                   // предлагаем свободное время: через 12 ч после последнего
@@ -1054,7 +1084,7 @@ function openPicker(idx) {
     for (let k = 0; k < 24 && c.times.includes(hhmm(m)); k++) m += 60;
     t = hhmm(m);
   }
-  picker = { idx, h: +t.slice(0, 2), m: +t.slice(3), err: '' };
+  picker = { kind: 'time', idx, h: +t.slice(0, 2), m: +t.slice(3), err: '' };
 }
 
 /* история: из журнала по дням */
@@ -1275,6 +1305,7 @@ function fixMethod(c) {
   if (w.length && !w.includes(c.water)) c.water = w.includes('full') ? 'full' : w[0];
   if (c.form !== 'powder') c.grams = false;
   if (c.form !== 'tablet' && !isG(c) && c.amount % 1) c.amount = Math.ceil(c.amount);
+  c.amount = Math.max(c.form === 'tablet' ? 0.5 : 1, Math.min(maxAmt(c), c.amount));
 }
 
 document.addEventListener('click', e => {
@@ -1303,9 +1334,22 @@ document.addEventListener('click', e => {
   // --- выбор времени ---
   if (picker) {
     if (d.preset) {
-      const hEl = document.getElementById('wH'), mEl = document.getElementById('wM');
-      hEl.scrollTo({ top: +d.preset.slice(0, 2) * ITEM, behavior: 'smooth' }); mEl.scrollTo({ top: +d.preset.slice(3) * ITEM, behavior: 'smooth' });
+      wheelTo('wH', +d.preset.slice(0, 2)); wheelTo('wM', +d.preset.slice(3));
       return;
+    }
+    if (d.gpreset) {
+      const g = +d.gpreset;
+      wheelTo('wA', Math.floor(g)); wheelTo('wB', g % 1 ? 1 : 0);
+      return;
+    }
+    if (id === 'pOk' && picker.kind === 'amount') {
+      const c = draft.c, v = picker.a + (picker.b ? 0.5 : 0);
+      if (v <= 0) {
+        picker.err = L('Choose more than zero.', 'Выберите больше нуля.');
+        $('#pErr').textContent = picker.err; const w = $('#wheels'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+        return;
+      }
+      c.amount = v; picker = null; render(); return;
     }
     if (id === 'pOk') {
       const t = hhmm(picker.h * 60 + picker.m), c = draft.c, dup = c.times.findIndex(x => x === t);
@@ -1346,7 +1390,7 @@ document.addEventListener('click', e => {
   else if (id === 'aTaken') { markTaken(alarmKey, hhmm(nowMin())); return; }
   else if (id === 'aSnooze') { snoozeNow(alarmKey); return; }
   else if (d.form) { draft.c.form = d.form; fixMethod(draft.c); }
-  else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' || isG(c) ? 0.5 : 1; c.amount = Math.max(stp, Math.min(60, c.amount + stp * +d.amt)); }
+  else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' || isG(c) ? 0.5 : 1; c.amount = Math.max(stp, Math.min(maxAmt(c), c.amount + stp * +d.amt)); }
   else if (d.gunit) { draft.c.grams = d.gunit === '1'; draft.c.amount = draft.c.grams ? 2.5 : 1; }
   else if (d.method) { draft.c.method = d.method; fixMethod(draft.c); }
   else if (d.water) draft.c.water = d.water;
@@ -1356,6 +1400,7 @@ document.addEventListener('click', e => {
   else if (d.deltime) draft.c.times.splice(+d.deltime, 1);
   else if (d.edittime) openPicker(+d.edittime);
   else if (id === 'addTime') openPicker(-1);
+  else if (id === 'amtBtn') openAmountPicker();
   else if (d.daymode) {
     draft.someDays = d.daymode === 'some';
     draft.c.days = draft.someDays ? [0, 0, 0, 0, 0, 0, 0].map((x, k) => k === dow(today()) ? 1 : 0) : [1, 1, 1, 1, 1, 1, 1];
