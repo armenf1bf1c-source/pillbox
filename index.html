@@ -3,6 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7eeea">
+<meta name="apple-mobile-web-app-title" content="Lolid Pillbox">
 <link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
 <title>Lolid Pillbox App</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -856,7 +857,7 @@ function notifHTML(n) {
     tx = L('Doses will ring on this phone until it’s back.', 'Пока связи нет, напоминать будет телефон.');
   }
   return `<div class="nc" data-nid="${n.id}" role="button" tabindex="0">
-    <div class="top"><span class="si">L</span>Lolid${when ? ' · ' + when : ''}</div>
+    <div class="top"><span class="si">L</span>Lolid Pillbox${when ? ' · ' + when : ''}</div>
     <div class="ti">${esc(ti)}</div><div class="tx">${esc(tx)}</div>
     ${acts.length ? `<div class="na">${acts.map(a => `<button data-na="${a[0]}" data-nid="${n.id}">${a[1]}</button>`).join('')}</div>` : ''}</div>`;
 }
@@ -1180,7 +1181,7 @@ function render() {
   if (FRAME && shade) h += `<div class="shade"><div class="qs"><b class="num">${hhmm(nowMin())}</b><span>${L('Sat, 26 Sep', 'сб, 26 сент.')}</span></div>
       ${notifs.length ? notifs.map(notifHTML).join('') : `<div class="empty">${L('No notifications', 'Нет уведомлений')}</div>`}<button class="cl" id="closeShade">${L('Close', 'Закрыть')}</button></div>`;
   if (mode === 'demo') h += `<div class="hu${huNotif && !shade ? ' show' : ''}">${huNotif ? notifHTML(huNotif) : ''}</div>`;
-  if (dlg) h += `<div class="dlg-dim"><div class="dlg" role="dialog"><div class="di">L</div><p>${L('Allow <b>Lolid</b> to send you notifications?', 'Разрешить приложению <b>Lolid</b> отправлять уведомления?')}</p>
+  if (dlg) h += `<div class="dlg-dim"><div class="dlg" role="dialog"><div class="di">L</div><p>${L('Allow <b>Lolid Pillbox</b> to send you notifications?', 'Разрешить приложению <b>Lolid Pillbox</b> отправлять уведомления?')}</p>
       <div class="db"><button id="allow">${L('Allow', 'Разрешить')}</button><button id="deny">${L('Don’t allow', 'Не разрешать')}</button></div></div></div>`;
   if (FRAME) h += `<div class="gbar${redTop ? ' inv' : ''}"><i></i></div>`;
   h += splashHTML();
@@ -1240,8 +1241,8 @@ function renderPanel() {
       <button class="btn" data-sim="reset">${L('Reset demo', 'Сбросить демо')}</button>
       <p class="cp" style="font-size:12px">${L('Tap the phone’s status bar to pull down the notification shade.', 'Нажмите на строку состояния телефона, чтобы открыть шторку уведомлений.')}</p></div>
     <div class="sec"><div class="lab" style="margin-top:0">${L('App icon and name', 'Значок и имя')}</div>
-      <div class="iconrow"><span class="appicon"><i>Lolid</i>Lolid</span><span class="appicon sq"><i>Lolid</i>Lolid</span></div>
-      <p class="cp" style="font-size:12px">${L('Under the icon: Lolid. The full name Lolid Pillbox goes in the store and on the splash.', 'Под значком — Lolid. Полное имя Lolid Pillbox — в магазине и на заставке.')}</p></div>`;
+      <div class="iconrow"><span class="appicon"><i>Lolid</i>Lolid Pillbox</span><span class="appicon sq"><i>Lolid</i>Lolid Pillbox</span></div>
+      <p class="cp" style="font-size:12px">${L('The app is called Lolid Pillbox, under the icon too.', 'Приложение называется Lolid Pillbox — так же и под значком.')}</p></div>`;
 }
 
 /* ------------------------------ события ------------------------------ */
