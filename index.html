@@ -291,6 +291,14 @@ textarea.inp{font-size:13px;line-height:1.45;resize:none;min-height:60px}
 .perm b{flex:1}
 .perm .ok{color:#0a6b3d;font-weight:800;font-size:11px;letter-spacing:.1em}
 .perm .btn{flex:none;min-height:36px;padding:6px 10px;margin:0;width:auto}
+.drow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.drow:first-child{border-top:0}
+.drow .dk{flex:1;font-size:13px;font-weight:700}
+.drow .dk small{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:2px}
+.drow .ok{font-size:10px;font-weight:800;letter-spacing:.12em;color:#0a6b3d}
+.drow .no{font-size:10px;font-weight:800;letter-spacing:.12em;color:var(--red-deep)}
+.drow .btn{flex:none;min-height:34px;padding:4px 12px;margin:0;width:auto}
+.drow b{font-size:16px;font-weight:800}
 .foot{font-size:11px;color:var(--muted);margin-top:14px;letter-spacing:.04em}
 
 /* нижние вкладки */
@@ -756,6 +764,13 @@ function tick(force) {
   const k = dkey(today());
   if (curDay !== k) { curDay = k; st = {}; save(); }
   const now = nowMin();
+  if (NATIVE && mode === 'live') {   // Android звонит сам по будильнику; если за 20 с не позвонил, а приложение открыто — звоним отсюда
+    const sec = new Date().getSeconds();
+    todayDoses().forEach(d => {
+      const tm = toMin(d.t);
+      if (!st[d.k] && tm <= now && now - tm <= 2 && (tm < now || sec >= 20)) { startDose(d.k); try { AndroidPillbox.notifyDose(d.k); } catch (e) { } }
+    });
+  }
   if (!NATIVE) todayDoses().forEach(d => {   // в Android время приёма отслеживает сервис
     const s = st[d.k], tm = toMin(d.t);
     if (!s && tm <= now && now - tm <= 2) startDose(d.k);                                        // время пришло
@@ -918,6 +933,7 @@ function statusCell(d) {
 function vToday() {
   const ds = todayDoses(), nx = nextDose(), taken = ds.filter(d => stOf(d).s === 't').length;
   let h = header();
+  if (mode === 'demo' && PHONE) h += `<div class="warn"><b>${L('Demo: nothing is saved and no reminders come.', 'Демо: ничего не сохраняется и напоминаний не будет.')}</b><button class="btn" id="leaveDemo">${L('Connect', 'Связать')}</button></div>`;
   if (mode === 'live' && !linked) h += `<div class="warn"><b>${L('The pillbox is not connected. The phone reminds you while this page is open.', 'Таблетница не подключена. Напоминает телефон, пока страница открыта.')}</b><button class="btn" id="reconnect2">${L('Connect', 'Связать')}</button></div>`;
   if (FRAME && !notifOn) h += `<div class="warn"><b>${L('Phone notifications are blocked. Only the pillbox will ring.', 'Уведомления на телефоне запрещены. Звонить будет только таблетница.')}</b><button class="btn" id="fixN">${L('Allow', 'Разрешить')}</button></div>`;
   if (!cells.some(Boolean)) {
@@ -1149,9 +1165,10 @@ function vSettings() {
       ${tog('phone', L('Ring on the phone at dose time', 'Звонить на телефоне во время приёма'), L('With Taken and Snooze buttons.', 'С кнопками «Принял» и «Отложить».'))}
       ${tog('missed', L('Tell me about missed doses', 'Сообщать о пропущенных приёмах'), L('If no one presses Taken.', 'Если никто не нажал «Принял».'))}
       ${tog('range', L('Warn when the pillbox is out of reach', 'Предупреждать, если таблетница вне связи'), '')}
-      <div class="set"><div class="perm"><b>${FRAME ? L('Android permission', 'Разрешение Android') : L('Notifications in this browser', 'Уведомления в этом браузере')}</b>${hasPerm ? `<span class="ok">${L('ALLOWED', 'РАЗРЕШЕНО')}</span>` : canAsk ? `<button class="btn" id="askPerm">${L('Allow', 'Разрешить')}</button>` : `<span class="muted">${L('not supported', 'нет')}</span>`}</div>
-        ${!hasPerm ? `<div class="d" style="margin-top:6px">${FRAME ? L('Without it the phone stays silent. Only the pillbox rings.', 'Без него телефон молчит, звонит только таблетница.') : L('Reminders still ring inside this page while it is open.', 'Пока страница открыта, напоминание всё равно зазвонит в ней.')}</div>` : ''}</div>
+      ${NATIVE ? '' : `<div class="set"><div class="perm"><b>${FRAME ? L('Android permission', 'Разрешение Android') : L('Notifications in this browser', 'Уведомления в этом браузере')}</b>${hasPerm ? `<span class="ok">${L('ALLOWED', 'РАЗРЕШЕНО')}</span>` : canAsk ? `<button class="btn" id="askPerm">${L('Allow', 'Разрешить')}</button>` : `<span class="muted">${L('not supported', 'нет')}</span>`}</div>
+        ${!hasPerm ? `<div class="d" style="margin-top:6px">${FRAME ? L('Without it the phone stays silent. Only the pillbox rings.', 'Без него телефон молчит, звонит только таблетница.') : L('Reminders still ring inside this page while it is open.', 'Пока страница открыта, напоминание всё равно зазвонит в ней.')}</div>` : ''}</div>`}
     </div>`;
+  if (NATIVE) h += diagBlock();
   if (mode === 'demo' && PHONE) h += `<div class="eyebrow" style="margin-top:20px">${L('Demo', 'Демо')}</div><div class="card"><div class="set">
       <button class="btn" data-sim="dose" style="margin:0 0 6px">${L('It’s 20:00 · dose time', '20:00 · время приёма')}</button>
       <button class="btn" data-sim="boxTaken" style="margin:0 0 6px" ${demoRing() ? '' : 'disabled'}>${L('Taken on the pillbox', 'Нажали «Принял» на таблетнице')}</button>
@@ -1160,6 +1177,24 @@ function vSettings() {
   h += `<div class="acts"><button class="btn soft" id="forget">${L('Forget this pillbox', 'Забыть таблетницу')}</button></div>
     <div class="foot">Lolid Pillbox 0.2 · ${mode === 'live' ? L('connected mode', 'рабочий режим') : L('demo', 'демо')}</div>`;
   return h;
+}
+
+/* Android: проверка напоминаний — что разрешено, когда ближайший будильник, проверочное уведомление */
+function diagBlock() {
+  let d = {};
+  try { d = JSON.parse(AndroidPillbox.diag()); } catch (e) { }
+  const row = (ok, name, fix, hint) => `<div class="drow"><span class="dk">${name}${!ok && hint ? `<small>${hint}</small>` : ''}</span>${ok ? `<span class="ok">${L('OK', 'ДА')}</span>`
+    : fix ? `<button class="btn" data-fix="${fix}">${L('Fix', 'Исправить')}</button>` : `<span class="no">${L('NO', 'НЕТ')}</span>`}</div>`;
+  return `<div class="eyebrow" style="margin-top:20px">${L('Check reminders', 'Проверка напоминаний')}</div>
+    <div class="card"><div class="set">
+      ${row(d.notif, L('Notifications allowed', 'Уведомления разрешены'), 'notif', L('Without this the phone stays silent.', 'Без этого телефон молчит.'))}
+      ${row(d.exact, L('Exact-time alarms', 'Будильник точно в минуту'), 'exact', L('Otherwise Android may remind late.', 'Иначе Android может напомнить с опозданием.'))}
+      ${row(d.battery, L('No battery restrictions', 'Без ограничений батареи'), 'battery', L('Find Lolid Pillbox and choose “Don’t optimize”.', 'Найдите Lolid Pillbox и выберите «Не экономить».'))}
+      ${row(d.fullscreen, L('Alarm over the lock screen', 'Тревога поверх блокировки'), 'fullscreen', '')}
+      ${row(d.service, L('Link with the pillbox in background', 'Связь с таблетницей в фоне'), '', L('Starts after “Connect”.', 'Включается после «Связать».'))}
+      <div class="drow"><span class="dk">${L('Next reminder', 'Ближайшее напоминание')}</span><b class="num">${d.next ? (d.nextDay ? L('tomorrow ', 'завтра ') : '') + d.next : '—'}</b></div>
+      <button class="btn pri" id="testNotify" style="margin-top:12px">${L('Send a test notification', 'Прислать проверочное уведомление')}</button>
+    </div></div>`;
 }
 
 function vAlarm() {
@@ -1435,6 +1470,8 @@ document.addEventListener('click', e => {
     if (d.tog === 'phone' && cfg.phone && mode === 'live' && typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission().then(render);
     save();
   }
+  else if (id === 'testNotify') { AndroidPillbox.testNotify(); toast(L('Sent. If nothing appeared, tap “Fix” next to what is off.', 'Отправлено. Если ничего не пришло — нажмите «Исправить» напротив того, что выключено.')); }
+  else if (d.fix) { if (d.fix === 'notif') AndroidPillbox.askNotif(); else AndroidPillbox.openSetting(d.fix); return; }
   else if (id === 'testRing') { bleSend('TEST'); toast(L('The pillbox rings once. Nothing is marked.', 'Таблетница звонит один раз. Ничего не отмечается.')); }
   else if (id === 'forget') {
     if (NATIVE && mode === 'live') { AndroidPillbox.forget(); linked = false; paired = false; onboarded = false; save(); }
