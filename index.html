@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7eeea">
+<link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
+<title>Lolid Pillbox App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800;900&family=Onest:wght@400;600;700;800;900&family=Noto+Serif:ital,wght@1,700&family=Roboto:wght@400;500;700&display=swap">
+<style>
+/* Lolid Pillbox: розоватая бумага, чёрная типографика, красный акцент. Всё нажимаемое — со скруглением. */
+:root{
+  --sheet:#f7eeea;
+  --card:#fffaf8;
+  --ink:#201e1d;
+  --muted:#76625d;
+  --line:rgba(32,30,29,.14);
+  --red:#dd2b0f;
+  --red-deep:#ae1800;
+  --red-press:#861200;
+  --red-tint:#f6d8d0;
+  --bt:#0082fc;
+  --desk:#e8e1de;
+  --frame:#1d1b1a;
+  --sys-surface:#f4f1ef;
+  --r:14px;
+  --rs:10px;
+  --rx:6px;
+  --font:"Archivo","Onest","Helvetica Neue",Arial,system-ui,sans-serif;
+  --serif:"Noto Serif","Times New Roman",Times,serif;
+  --sys:"Roboto","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--desk);color:var(--ink);font:14px/1.4 var(--font)}
+button,input,textarea{font:inherit;color:inherit}
+h2,p{margin:0}
+:focus-visible{outline:3px solid var(--bt);outline-offset:2px}
+
+/* ------------------------------ стол ------------------------------ */
+.wrap{display:flex;gap:44px;justify-content:center;align-items:flex-start;flex-wrap:wrap;padding-block:28px 48px;padding-inline:16px}
+.holder{width:380px;flex:none;overflow:hidden}
+.phone{width:380px;height:800px;background:var(--frame);border-radius:46px;padding:10px;box-shadow:0 30px 70px rgba(32,30,29,.22);transform-origin:top left}
+.screen{position:relative;width:360px;height:780px;border-radius:36px;overflow:hidden;background:var(--sheet)}
+
+/* на телефоне — приложение во весь экран, без рамки и без панели */
+body.phone{background:var(--sheet)}
+body.phone .wrap{display:block;padding:0}
+body.phone .holder{width:auto!important;height:auto!important;overflow:visible}
+body.phone .phone{width:auto;height:auto;background:none;border-radius:0;padding:0;box-shadow:none;transform:none!important}
+body.phone .screen{position:fixed;inset:0;width:auto;height:auto;border-radius:0}
+body.phone .panel{display:none}
+body.phone .view{top:0;padding-top:calc(env(safe-area-inset-top,0px) + 12px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)}
+body.phone .view.notabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 36px)}
+body.phone .tabs{bottom:calc(env(safe-area-inset-bottom,0px) + 10px)}
+body.phone .toast{bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
+body.phone .alarm{padding-top:calc(env(safe-area-inset-top,0px) + 14px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 20px)}
+body.phone .sheet{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px)}
+body.phone .hu{top:calc(env(safe-area-inset-top,0px) + 6px)}
+
+/* системная строка Android (только в демо на компьютере) */
+.sbar{position:absolute;top:0;left:0;right:0;height:30px;z-index:40;display:flex;align-items:center;gap:6px;padding:0 24px;font:500 13px var(--sys);color:var(--ink);cursor:pointer}
+.sbar.inv{color:#fff}
+.sbar .sp{flex:1}
+.gbar{position:absolute;left:0;right:0;bottom:0;height:16px;z-index:39;display:grid;place-items:center;pointer-events:none}
+.gbar i{display:block;width:108px;height:4px;border-radius:2px;background:var(--ink);opacity:.75}
+.gbar.inv i{background:#fff}
+
+/* ------------------------------ лист ------------------------------ */
+.view{position:absolute;top:30px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;padding:10px 18px 104px;scrollbar-width:none}
+.view::-webkit-scrollbar{display:none}
+.view.notabs{padding-bottom:40px}
+.hd{display:flex;align-items:center;gap:9px;padding-bottom:9px}
+.brand{font-size:13px;font-weight:800;letter-spacing:.24em;color:var(--red)}
+.hd .sp{flex:1}
+.bt{display:block;opacity:.22}
+.bt.on{opacity:1}
+.state{font-size:11px;font-weight:700;letter-spacing:.14em;background:none;border:0;padding:0}
+button.state{cursor:pointer;color:var(--red-deep);text-decoration:underline;text-underline-offset:3px}
+.rule{height:4px;background:var(--ink);border-radius:2px}
+.eyebrow{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin:18px 0 5px;color:var(--red-deep)}
+.ch{font-size:34px;font-weight:800;letter-spacing:-.045em;line-height:.96;text-transform:uppercase;text-wrap:balance}
+.cp{font-size:13px;line-height:1.45;max-width:32ch;margin-top:9px;text-wrap:pretty}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.huge{font-size:104px;font-weight:800;letter-spacing:-.055em;line-height:.86;font-variant-numeric:tabular-nums;margin-top:2px}
+.huge.word{font-size:60px;letter-spacing:-.03em;line-height:1.02}
+/* кириллица: другой шрифт (Onest), ему нужно больше воздуха — иначе «Ё» налезает на строку выше */
+.ru .ch{letter-spacing:-.02em;line-height:1.04}
+.ru .huge.word{font-size:46px;letter-spacing:-.01em;line-height:1.1}
+.card{background:var(--card);border-radius:18px;padding:0 14px}
+
+.band{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:50px;padding:0 14px;margin:14px 0 12px;
+  background:var(--ink);color:#fff;border-radius:var(--r);width:100%;border:0;text-align:left;cursor:pointer}
+.band.red{background:var(--red)}
+.band b{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.band i{font-style:normal;font-size:20px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.warn{display:flex;align-items:center;gap:10px;background:var(--red-tint);border-radius:var(--r);padding:10px 12px;margin-top:12px}
+.warn b{flex:1;font-size:12px;font-weight:800;color:var(--red-deep)}
+.warn .btn{flex:none;min-height:38px;padding:6px 12px}
+
+/* прогресс дня */
+.prog{display:flex;align-items:baseline;justify-content:space-between;margin-top:4px}
+.prog .k{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.prog .v{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.segs{display:flex;gap:5px;margin-top:6px}
+.segs i{flex:1;height:12px;border-radius:var(--rx);background:var(--card);box-shadow:inset 0 0 0 2px var(--ink)}
+.segs i.t{background:var(--ink)}
+.segs i.m{background:var(--red);box-shadow:none}
+.segs i.a{box-shadow:inset 0 0 0 2px var(--red)}
+
+/* строки приёмов */
+.list{margin-top:10px}
+.dose{display:grid;grid-template-columns:60px 1fr 84px;gap:8px;align-items:center;width:100%;padding:12px 0;cursor:pointer;
+  background:none;border:0;border-top:2px solid var(--line);text-align:left}
+.dose:first-child{border-top:0}
+.dose .dt{font-size:22px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.dose .dn{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:800;min-width:0}
+.dose .dn span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cno{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:var(--rx);background:var(--ink);color:#fff;font-size:11px;font-weight:800}
+.dose .dd{font-size:12px;color:var(--muted);margin-top:1px}
+.stt{justify-self:end;text-align:right;font-size:10px;font-weight:800;letter-spacing:.1em;line-height:1.35;text-transform:uppercase}
+.stt small{display:block;font-size:13px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.stt.w{color:var(--muted)}
+.stt.m{background:var(--red);color:#fff;padding:6px 9px;border-radius:var(--rs)}
+.stt.x{background:var(--red-tint);color:var(--red-deep);padding:6px 9px;border-radius:var(--rs)}
+.stt.a{box-shadow:inset 0 0 0 2px var(--red);color:var(--red-deep);padding:5px 8px;border-radius:var(--rs)}
+.stt .late{display:block;color:var(--red-deep);font-size:10px;letter-spacing:.06em}
+.dose:active,.cellrow:active,.dayrow:active{background:rgba(32,30,29,.06)}
+
+/* ------------------------------ кнопки ------------------------------ */
+.acts{display:flex;gap:8px;margin-top:14px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:12px 10px;
+  border:2px solid var(--ink);background:transparent;color:var(--ink);font-size:11px;font-weight:800;
+  letter-spacing:.14em;text-transform:uppercase;cursor:pointer;border-radius:var(--r)}
+.btn:active{background:var(--ink);color:#fff}
+.btn.pri{background:var(--red);border-color:var(--red);color:#fff}
+.btn.pri:active{background:var(--red-press);border-color:var(--red-press)}
+.btn.ink{background:var(--ink);color:#fff}
+.btn.soft{border-color:transparent;background:var(--card)}
+.btn:disabled{opacity:.3;cursor:default}
+.note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;min-height:1.3em;white-space:pre-wrap}
+.note.err{color:var(--red-deep);font-weight:700}
+.hold{position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none}
+.hold .fill{position:absolute;inset:0 auto 0 0;width:0;background:var(--red-press)}
+.hold span{position:relative}
+
+/* нумерованные строки */
+.row{border-top:2px solid var(--line);padding:13px 0 14px}
+.row:first-child{border-top:0}
+.rt{display:flex;align-items:baseline;gap:10px}
+.rn{font-size:27px;font-weight:800;letter-spacing:-.04em;min-width:38px;font-variant-numeric:tabular-nums;color:var(--red)}
+.rl{font-size:16px;font-weight:800;text-transform:uppercase}
+.rd{font-size:12px;line-height:1.4;margin:4px 0 0 48px;max-width:30ch}
+
+/* ячейки */
+.cellrow{display:grid;grid-template-columns:40px 34px 1fr;gap:10px;align-items:start;width:100%;text-align:left;background:none;border:0;
+  border-top:2px solid var(--line);padding:14px 0;cursor:pointer}
+.cellrow:first-child{border-top:0}
+.cellrow .nm{font-size:16px;font-weight:800;text-transform:uppercase;line-height:1.15}
+.cellrow .dsc{font-size:12px;margin-top:3px}
+.cellrow .tms{font-size:13px;font-weight:800;margin-top:5px;font-variant-numeric:tabular-nums}
+.cellrow.empty .nm{color:var(--muted)}
+
+/* редактор */
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:10px;font-weight:800;letter-spacing:.2em;
+  text-transform:uppercase;margin:22px 0 8px;color:var(--red-deep)}
+.lab em{font-style:normal;letter-spacing:.08em;color:var(--muted);text-align:right}
+.forms{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.forms button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 9px;border:2px solid var(--ink);border-radius:var(--r);
+  background:var(--card);cursor:pointer;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.forms button.on{background:var(--ink);color:#fff}
+.inp{display:block;width:100%;border:2px solid var(--ink);border-radius:var(--r);padding:10px 12px;background:var(--card);outline:none}
+.inp:focus{border-color:var(--red)}
+.inp.big{font-size:22px;font-weight:800;letter-spacing:-.02em}
+textarea.inp{font-size:13px;line-height:1.45;resize:none;min-height:60px}
+.step{display:flex;align-items:center}
+.step button{width:50px;height:50px;border:2px solid var(--ink);border-radius:var(--r);background:var(--card);font-size:22px;font-weight:800;cursor:pointer}
+.step button:active{background:var(--ink);color:#fff}
+.step output{min-width:64px;text-align:center;font-size:30px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.step .unit{margin-left:10px;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chips.c3{grid-template-columns:repeat(3,1fr)}
+.chips.c7{grid-template-columns:repeat(7,1fr);gap:4px}
+.chips button{min-height:42px;border:2px solid var(--ink);border-radius:var(--rs);background:var(--card);cursor:pointer;font-size:10px;font-weight:800;
+  letter-spacing:.08em;text-transform:uppercase;padding:4px 6px;line-height:1.2}
+.chips button.on{background:var(--ink);color:#fff}
+.chips button.wide{grid-column:1/-1}
+.chips button.today{box-shadow:0 0 0 2px var(--red)}
+.tog{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;padding:12px 0;cursor:pointer;text-align:left}
+.tog b{display:block;font-size:13px;font-weight:800}
+.tog small{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.tog>span:first-child{flex:1}
+.sw{flex:none;width:48px;height:28px;border-radius:14px;background:#d9ccc7;position:relative;transition:background .15s}
+.sw i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.sw.on{background:var(--red)}
+.sw.on i{left:23px}
+.times{margin-top:2px}
+.tr{display:flex;align-items:center;gap:8px;border-top:2px solid var(--line);padding:6px 0}
+.tr:first-child{border-top:0}
+.tr .tb{flex:1;display:flex;align-items:baseline;gap:10px;background:none;border:0;padding:6px 0;cursor:pointer;text-align:left}
+.tr .tb b{font-size:30px;font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.tr .tb span{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tr .del{border:0;background:var(--sheet);border-radius:var(--rs);font-size:10px;font-weight:800;letter-spacing:.12em;cursor:pointer;padding:9px 11px;text-transform:uppercase;color:var(--red-deep)}
+.addt{margin-top:8px}
+
+/* колёса выбора времени, как на iPhone */
+.picker .wheels{position:relative;display:flex;justify-content:center;align-items:center;gap:4px;height:220px;margin-top:6px;user-select:none;-webkit-user-select:none}
+.picker .wbar{position:absolute;left:12%;right:12%;top:50%;height:48px;margin-top:-24px;background:var(--sheet);border-radius:var(--r)}
+.picker .wheel{position:relative;z-index:1;width:92px;height:220px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;
+  -webkit-mask-image:linear-gradient(transparent,#000 38%,#000 62%,transparent);mask-image:linear-gradient(transparent,#000 38%,#000 62%,transparent);cursor:grab}
+.picker .wheel::-webkit-scrollbar{display:none}
+.picker .wheel div{height:48px;line-height:48px;text-align:center;font-size:30px;font-weight:700;scroll-snap-align:center;font-variant-numeric:tabular-nums;color:var(--muted)}
+.picker .wheel div.sel{color:var(--ink);font-weight:800;font-size:34px}
+.picker .wheel .pad{height:86px;scroll-snap-align:none}
+.picker .colon{position:relative;z-index:1;font-size:32px;font-weight:800;padding-bottom:4px}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.presets button{border:0;background:var(--sheet);border-radius:var(--rs);padding:8px 2px;cursor:pointer;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.presets button small{display:block;font-size:13px;letter-spacing:0;margin-top:2px;font-variant-numeric:tabular-nums}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* превью экрана таблетницы 172x320 */
+.devwrap{display:flex;gap:14px;align-items:flex-start;margin-top:4px}
+.devframe{flex:none;width:153px;height:274px;background:#141312;border-radius:18px;padding:8px}
+.devs{width:172px;height:320px;transform:scale(.8);transform-origin:0 0;background:#fff;border-radius:14px;overflow:hidden;position:relative;font-family:"Archivo","Onest",Arial,sans-serif;color:var(--ink)}
+.devs .n{position:absolute;left:16px;top:10px;width:40px;height:40px;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:30px;font-weight:800}
+.devs .c{position:absolute;left:66px;top:12px;font-size:14px;font-weight:800;letter-spacing:.07em}
+.devs .f{position:absolute;left:66px;top:30px;font-size:14px;color:#55504d}
+.devs .ln{position:absolute;left:0;right:0;height:2px;background:#a6a5a4}
+.devs .ic{position:absolute;left:16px;top:68px}
+.devs .nm{position:absolute;left:16px;right:16px;top:108px;font-size:20px;font-weight:800;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.devs .body{position:absolute;left:16px;right:16px;top:134px;font-size:14px;line-height:18px}
+.devs .body b{display:block;color:var(--red-deep);font-size:16px;font-weight:600;line-height:20px}
+.devs .body span{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.devs .tm{position:absolute;left:16px;right:8px;top:231px;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden}
+.devs .bk{position:absolute;left:12px;right:12px;top:264px;height:44px;border:2px solid var(--ink);display:flex;align-items:center;gap:10px;padding-left:14px;font-size:16px;font-weight:800}
+.devnote{font-size:12px;line-height:1.45}
+
+/* история */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
+.stats div{background:var(--card);border-radius:var(--r);padding:10px 12px}
+.stats b{display:block;font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.stats span{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-top:5px}
+.stats .m b{color:var(--red)}
+.dayrow{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;border-top:2px solid var(--line);padding:13px 0;cursor:pointer;text-align:left}
+.dayrow:first-child{border-top:0}
+.dayrow .dn{flex:1;min-width:0}
+.dayrow .dn b{display:block;font-size:15px;font-weight:800}
+.dayrow .dn small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.pill{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;border-radius:var(--rs);white-space:nowrap}
+.pill.ok{background:var(--sheet)}
+.pill.m{background:var(--red);color:#fff}
+.pill.l{background:var(--red-tint);color:var(--red-deep)}
+.dayrow .ar{font-size:18px;font-weight:800;color:var(--muted);width:14px;text-align:center}
+.daydet{padding:0 0 10px 0}
+.dline{display:grid;grid-template-columns:48px 1fr auto;gap:8px;align-items:center;padding:7px 0;border-top:1px dashed var(--line)}
+.dline .t{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+.dline .n{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;min-width:0}
+.dline .n span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dline .s{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;text-align:right}
+.dline .s.m{color:var(--red)}
+.dline .s.l{color:var(--red-deep)}
+.dline .s.w{color:var(--muted)}
+.medrow{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;border-top:2px solid var(--line);padding:12px 0}
+.medrow:first-child{border-top:0}
+.medrow b{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.medrow small{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.medrow .v{font-size:18px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;text-align:right}
+.medrow .v small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:800}
+.medrow .v small.m{color:var(--red)}
+
+/* настройки */
+.set{border-top:2px solid var(--line);padding:13px 0}
+.set:first-child{border-top:0}
+.set .k{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.set .v{font-size:18px;font-weight:800;margin-top:2px}
+.set .d{font-size:12px;color:var(--muted);margin-top:3px;max-width:34ch}
+.set .chips{margin-top:10px}
+.set.flex{display:flex;align-items:center;gap:12px}
+.set.flex>div{flex:1;min-width:0}
+.set .btn{margin-top:10px;width:100%}
+.set.tog{border-top:2px solid var(--line);padding:13px 0}
+.perm{display:flex;align-items:center;gap:10px;margin-top:4px;padding:10px 12px;border-radius:var(--rs);background:var(--sheet);font-size:12px}
+.perm b{flex:1}
+.perm .ok{color:#0a6b3d;font-weight:800;font-size:11px;letter-spacing:.1em}
+.perm .btn{flex:none;min-height:36px;padding:6px 10px;margin:0;width:auto}
+.foot{font-size:11px;color:var(--muted);margin-top:14px;letter-spacing:.04em}
+
+/* нижние вкладки */
+.tabs{position:absolute;left:10px;right:10px;bottom:22px;z-index:20;background:var(--ink);border-radius:20px;display:flex;gap:4px;padding:5px;
+  box-shadow:0 8px 24px rgba(32,30,29,.18)}
+.tabs button{flex:1;height:46px;border:0;border-radius:15px;background:none;cursor:pointer;color:rgba(255,255,255,.72);
+  font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:0 2px}
+.tabs button.on{background:var(--red);color:#fff}
+.tabs .badge{display:inline-block;min-width:16px;height:16px;line-height:16px;margin-left:4px;border-radius:8px;background:#fff;color:var(--red-deep);font-size:10px;letter-spacing:0}
+
+/* тревога */
+.alarm{position:absolute;inset:0;z-index:25;background:var(--red-deep);color:#fff;padding:40px 18px 30px;display:flex;flex-direction:column}
+.alarm .brand,.alarm .state,.alarm .eyebrow{color:#fff}
+.alarm .rule{background:#fff}
+.alarm .who{display:flex;align-items:center;gap:12px;margin-top:16px}
+.alarm .who .sq{width:56px;height:56px;border-radius:var(--r);background:#fff;color:var(--red-deep);display:grid;place-items:center;font-size:38px;font-weight:800;flex:none}
+.alarm .who b{font-size:24px;font-weight:800;line-height:1.05;text-transform:uppercase}
+.alarm .who small{display:block;font-size:13px;font-weight:700;margin-top:3px;text-transform:none}
+.alarm .ins{font-size:15px;line-height:1.45;margin-top:14px;max-width:30ch}
+.alarm .acts{margin-top:auto;flex-direction:column}
+.alarm .btn{border-color:#fff;color:#fff;min-height:58px}
+.alarm .btn.w{background:#fff;color:var(--red-deep);font-size:13px}
+.alarm .btn:active{background:#fff;color:var(--red-deep)}
+.alarm .btn.w:active{background:var(--red-press);color:#fff}
+.alarm .note{color:#fff;opacity:.85}
+
+/* лист снизу */
+.dim{position:absolute;inset:0;z-index:30;background:rgba(32,30,29,.42)}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:31;background:var(--card);border-radius:24px 24px 0 0;padding:10px 18px 30px;max-height:92%;overflow-y:auto}
+.sheet::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 6px}
+.sheet .ch{font-size:28px}
+.sheet .eyebrow{margin-top:8px}
+
+.toast{position:absolute;left:18px;right:18px;bottom:92px;z-index:35;background:var(--ink);color:#fff;padding:13px 14px;border-radius:var(--r);font-size:12px;font-weight:700;letter-spacing:.02em}
+.toast.nt{bottom:34px}
+
+/* заставка */
+.splash{position:absolute;inset:0;z-index:60;cursor:pointer;background:var(--sheet);display:flex;align-items:center;transition:opacity .45s}
+.splash .sbox{padding:0 34px 40px;width:100%}
+.splash .sq{display:grid;grid-template-columns:repeat(2,46px);gap:9px}
+.splash .sq i{position:relative;width:46px;height:46px;border:3px solid var(--red);border-radius:12px}
+.splash .sq b{position:absolute;inset:3px;border-radius:7px;background:var(--red);opacity:0}
+.splash .logo{font:italic 700 66px var(--serif);color:var(--red);line-height:1;margin-top:34px}
+.splash .srule{height:4px;border-radius:2px;background:var(--red);margin-top:16px}
+.splash .sname{font-size:30px;font-weight:800;letter-spacing:-.02em;margin-top:20px}
+.splash .stag{font-size:14px;color:var(--muted);margin-top:4px}
+
+/* системный интерфейс Android */
+.hu{position:absolute;left:8px;right:8px;top:34px;z-index:45;transform:translateY(-130%);transition:transform .28s cubic-bezier(.33,1,.68,1)}
+.hu.show{transform:none}
+.nc{background:var(--sys-surface);border-radius:22px;padding:13px 14px 8px;font-family:var(--sys);color:#1d1b1a;box-shadow:0 6px 22px rgba(0,0,0,.16);text-align:left;cursor:pointer}
+.nc+.nc{margin-top:6px}
+.nc .top{display:flex;align-items:center;gap:8px;font-size:12px;color:#5d5854}
+.nc .si{width:20px;height:20px;border-radius:50%;background:var(--red);display:grid;place-items:center;color:#fff;font:italic 700 13px var(--serif);flex:none}
+.nc .ti{font-size:14px;font-weight:500;margin-top:7px}
+.nc .tx{font-size:13px;color:#4a4542;margin-top:2px;line-height:1.35}
+.nc .na{display:flex;gap:4px;margin-top:6px;margin-left:-6px}
+.nc .na button{border:0;background:none;color:var(--red-deep);font:500 13px var(--sys);padding:8px;border-radius:16px;cursor:pointer}
+.shade{position:absolute;inset:0;z-index:44;background:rgba(236,232,229,.97);padding:40px 8px 20px;overflow-y:auto}
+.shade .qs{display:flex;justify-content:space-between;align-items:baseline;padding:4px 14px 14px;font-family:var(--sys)}
+.shade .qs b{font-size:34px;font-weight:400}
+.shade .qs span{font-size:13px;color:#5d5854}
+.shade .empty{font-family:var(--sys);font-size:13px;color:#5d5854;text-align:center;padding:30px}
+.shade .cl{display:block;margin:12px auto 0;border:0;background:#fff;border-radius:18px;padding:8px 16px;font:500 13px var(--sys);cursor:pointer}
+.dlg-dim{position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:24px}
+.dlg{background:#f7f3f0;border-radius:28px;padding:22px 22px 12px;font-family:var(--sys);color:#1d1b1a;width:100%}
+.dlg .di{width:32px;height:32px;margin:0 auto 12px;border-radius:50%;background:var(--red);display:grid;place-items:center;color:#fff;font:italic 700 18px var(--serif)}
+.dlg p{font-size:18px;line-height:1.35;text-align:center}
+.dlg p b{font-weight:500}
+.dlg .db{display:flex;flex-direction:column;gap:6px;margin-top:18px}
+.dlg .db button{border:0;border-radius:20px;padding:11px;font:500 14px var(--sys);cursor:pointer;background:#ebe3dd}
+.dlg .db button:first-child{background:var(--red-deep);color:#fff}
+.devlist{margin-top:14px;background:var(--card);border-radius:var(--r);overflow:hidden}
+.devlist button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:0;padding:16px 14px;cursor:pointer;text-align:left}
+.devlist b{flex:1;font-size:16px;font-weight:800}
+.devlist span{font-size:11px;font-weight:700;letter-spacing:.1em}
+
+/* панель справа */
+.panel{width:340px;max-width:100%;padding-top:6px}
+.panel .wm{font:italic 700 40px var(--serif);color:var(--red);line-height:1}
+.panel .ch{font-size:28px;margin-top:10px}
+.panel .cp{max-width:40ch}
+.panel .sec{margin-top:24px}
+.panel .btn{width:100%;min-height:44px;justify-content:flex-start;padding:10px 14px;text-align:left;letter-spacing:.1em}
+.panel .btn+.btn{margin-top:6px}
+.panel .btn small{margin-left:auto;font-size:10px;letter-spacing:.04em;opacity:.75;text-transform:none;font-weight:600}
+.iconrow{display:flex;gap:22px;align-items:flex-start;margin-top:10px}
+.appicon{display:flex;flex-direction:column;align-items:center;gap:7px;font:400 12px var(--sys)}
+.appicon i{width:64px;height:64px;border-radius:50%;background:var(--red);display:grid;place-items:center;color:#fff;font:italic 700 20px var(--serif);box-shadow:0 3px 10px rgba(0,0,0,.14)}
+.appicon.sq i{border-radius:16px}
+.panel ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.5}
+.panel li+li{margin-top:5px}
+.seg{display:flex;gap:6px;margin-top:8px}
+.seg button{flex:1;min-height:40px;border:2px solid var(--ink);border-radius:var(--rs);background:none;font-size:11px;font-weight:800;letter-spacing:.14em;cursor:pointer}
+.seg button.on{background:var(--ink);color:#fff}
+@media (prefers-reduced-motion:reduce){.hu,.sw,.sw i{transition:none}.shake{animation:none}}
+</style>
+
+<div class="wrap">
+  <div class="holder" id="holder"><div class="phone" id="phone"><div class="screen" id="screen"></div></div></div>
+  <aside class="panel" id="panel"></aside>
+</div>
+
+<script>
+/* =====================================================================
+   Lolid Pillbox. Одна страница — два режима:
+   • на компьютере: демо в рамке телефона, Android и таблетница изображены;
+   • на телефоне (Bluefy на iPhone, Chrome на Android): настоящее приложение,
+     связь с таблетницей по Bluetooth (Nordic UART, pillbox/PROTOCOL.md).
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const NATIVE = typeof AndroidPillbox !== 'undefined';   // внутри приложения Android (мост из MainActivity)
+const PHONE = NATIVE || matchMedia('(max-width: 600px) and (pointer: coarse)').matches;
+const FRAME = !PHONE;
+if (PHONE) document.body.classList.add('phone');
+let lang = 'en';
+const L = (en, ru) => lang === 'ru' ? ru : en;
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/* значки: Lucide — те же, что на экране таблетницы */
+const P = {
+  tablet: ['M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z', 'M7.5 16.5l9-9'],
+  capsule: ['m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z', 'm8.5 8.5 7 7'],
+  powder: ['M5 3h14v18H5z', 'M5 6.5h14', 'M5 17.5h14', 'M9 10.5h6', 'M9 14h4'],
+  drops: ['M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z'],
+  arrow: ['m12 19-7-7 7-7', 'M19 12H5']
+};
+const ic = (k, s = 24, sw = 2, col = 'currentColor') =>
+  `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k].map(d => `<path d="${d}"/>`).join('')}</svg>`;
+const BT = (on, col = 'var(--bt)') =>
+  `<svg class="bt${on ? ' on' : ''}" width="10" height="18" viewBox="0 0 12 24" fill="none" stroke="${col}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M0 6 L12 18 L6 24 L6 0 L12 6 L0 18"/></svg>`;
+
+/* ------------------------ лекарство: форма, приём ------------------------ */
+const FORMS = ['tablet', 'capsule', 'powder', 'drops'];
+const formName = f => ({ tablet: L('Tablet', 'Таблетка'), capsule: L('Capsule', 'Капсула'), powder: L('Powder', 'Порошок'), drops: L('Drops', 'Капли') })[f];
+function ruPl(n, a) { if (n % 1) return a[1]; const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? a[0] : m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20) ? a[1] : a[2]; }
+const fmtAmt = a => a % 1 ? (Math.floor(a) || '') + '½' : String(a);
+function unit(f, n) {
+  if (lang === 'ru') return ruPl(n, { tablet: ['таблетка', 'таблетки', 'таблеток'], capsule: ['капсула', 'капсулы', 'капсул'], powder: ['пакетик', 'пакетика', 'пакетиков'], drops: ['капля', 'капли', 'капель'] }[f]);
+  const u = { tablet: 'tablet', capsule: 'capsule', powder: 'sachet', drops: 'drop' }[f];
+  return n > 1 ? u + 's' : u;
+}
+const doseText = c => `${fmtAmt(c.amount)} ${unit(c.form, c.amount)}`;
+
+/* Способы приёма зависят от формы */
+const METHODS = { tablet: ['swallow', 'chew', 'tongue', 'dissolve'], capsule: ['swallow', 'open'], powder: ['stir', 'mixfood', 'tongue'], drops: ['spoon', 'glass', 'tongue', 'eyes', 'nose', 'ears'] };
+const methodName = m => ({
+  swallow: L('Swallow whole', 'Проглотить целиком'), chew: L('Chew', 'Разжевать'), tongue: L('Under the tongue', 'Под язык'),
+  dissolve: L('Dissolve in water', 'Растворить в воде'), open: L('Open, mix with food', 'Открыть, смешать с едой'),
+  stir: L('Stir into water', 'Размешать в воде'), mixfood: L('Mix with food', 'Смешать с едой'),
+  spoon: L('Spoon of water', 'В ложку воды'), glass: L('Glass of water', 'В стакан воды'),
+  eyes: L('Into the eyes', 'В глаза'), nose: L('Into the nose', 'В нос'), ears: L('Into the ears', 'В уши')
+})[m];
+const WATER_OPT = m => ['swallow', 'chew'].includes(m) ? ['none', 'half', 'full'] : ['dissolve', 'stir', 'glass'].includes(m) ? ['half', 'full'] : [];
+const waterName = w => ({ none: L('No water', 'Без воды'), half: L('Half a glass', 'Полстакана'), full: L('Full glass', 'Стакан') })[w];
+const NO_FOOD = ['eyes', 'nose', 'ears'];
+const FOODS = ['before', 'with', 'after', 'empty', 'any'];
+const foodName = f => ({ before: L('Before meal', 'До еды'), with: L('With meal', 'Во время еды'), after: L('After meal', 'После еды'), empty: L('Empty stomach', 'Натощак'), any: L('Any time', 'Когда угодно') })[f];
+const FLAGS = m => ({ swallow: ['nochew'], dissolve: ['atonce'], stir: ['atonce'], spoon: ['shake'], glass: ['shake'], tongue: [], eyes: ['shake'], nose: ['shake'], ears: ['shake'] })[m] || [];
+const flagName = f => ({ nochew: L('Don’t chew or crush', 'Не разжёвывать'), atonce: L('Drink at once', 'Выпить сразу'), shake: L('Shake the bottle first', 'Сначала встряхнуть') })[f];
+
+function methodText(c) {
+  const w = c.water, m = c.method, drops = c.form === 'drops';
+  const en = { half: 'half a glass of water', full: 'a glass of water' }, ins = { half: 'половиной стакана воды', full: 'стаканом воды' },
+        prep = { half: 'половине стакана воды', full: 'стакане воды' }, acc = { half: 'полстакана воды', full: 'стакан воды' };
+  switch (m) {
+    case 'swallow': return w !== 'none' ? L(`Swallow whole with ${en[w]}.`, `Проглотить целиком, запить ${ins[w]}.`) : L('Swallow whole.', 'Проглотить целиком.');
+    case 'chew': return w !== 'none' ? L(`Chew, then drink ${en[w]}.`, `Разжевать, запить ${ins[w]}.`) : L('Chew well.', 'Хорошо разжевать.');
+    case 'tongue': return drops ? L('Drip under the tongue.', 'Накапать под язык.') : L('Keep under the tongue until it dissolves.', 'Держать под языком до растворения.');
+    case 'dissolve': return L(`Dissolve in ${en[w]}.`, `Растворить в ${prep[w]}.`);
+    case 'open': return L('Open the capsule and mix with a spoon of food.', 'Открыть капсулу, смешать с ложкой еды.');
+    case 'stir': return L(`Stir into ${en[w]}.`, `Размешать в ${prep[w]}.`);
+    case 'mixfood': return L('Mix with a spoon of food or juice.', 'Смешать с ложкой еды или сока.');
+    case 'spoon': return L('Drip into a spoon of water.', 'Накапать в ложку воды.');
+    case 'glass': return L(`Drip into ${en[w]}.`, `Накапать в ${acc[w]}.`);
+    case 'eyes': return L('Drip into the eyes.', 'Закапать в глаза.');
+    case 'nose': return L('Drip into the nose.', 'Закапать в нос.');
+    case 'ears': return L('Drip into the ears.', 'Закапать в уши.');
+  }
+  return '';
+}
+function instr(c) {
+  const out = [];
+  if (!NO_FOOD.includes(c.method)) {
+    if (c.food === 'before') out.push(L(`${c.before} min before a meal.`, `За ${c.before} мин до еды.`));
+    if (c.food === 'with') out.push(L('With a meal.', 'Во время еды.'));
+    if (c.food === 'after') out.push(L('After a meal.', 'После еды.'));
+    if (c.food === 'empty') out.push(L('On an empty stomach.', 'Натощак.'));
+  }
+  const fl = FLAGS(c.method).filter(f => c.flags[f]);
+  if (fl.includes('shake')) out.push(L('Shake first.', 'Встряхнуть.'));
+  out.push(methodText(c));
+  if (fl.includes('atonce')) out.push(L('Drink at once.', 'Выпить сразу.'));
+  if (fl.includes('nochew')) out.push(L('Don’t chew.', 'Не разжёвывать.'));
+  const note = lang === 'ru' ? c.noteRu ?? c.note : c.note;
+  if (note) out.push(note);
+  return out.join(' ');
+}
+function shortHow(c) { return (NO_FOOD.includes(c.method) || c.food === 'any' ? methodName(c.method) : foodName(c.food)).toLowerCase(); }
+
+function demoCells() {
+  const all = [1, 1, 1, 1, 1, 1, 1];
+  return [
+    { form: 'tablet', name: 'Aspirin Cardio', amount: 1, method: 'swallow', water: 'full', food: 'after', before: 30, flags: {}, note: '', times: ['08:00', '22:00'], days: [...all] },
+    { form: 'capsule', name: 'Omeprazole', amount: 1, method: 'swallow', water: 'half', food: 'before', before: 30, flags: { nochew: 1 }, note: '', times: ['09:30', '14:00'], days: [...all] },
+    { form: 'powder', name: 'Smecta', amount: 1, method: 'stir', water: 'half', food: 'any', before: 30, flags: { atonce: 1 }, note: '', times: ['13:00'], days: [...all] },
+    { form: 'drops', name: 'Vitamin D3', amount: 5, method: 'spoon', water: 'none', food: 'with', before: 30, flags: {}, note: '', times: ['20:00'], days: [...all] }
+  ];
+}
+function blankCell() { return { form: 'tablet', name: '', amount: 1, method: 'swallow', water: 'full', food: 'any', before: 30, flags: {}, note: '', times: ['08:00'], days: [1, 1, 1, 1, 1, 1, 1] }; }
+
+/* ------------------------------- состояние ------------------------------- */
+let mode = 'demo';               // 'demo' — всё изображено, 'live' — настоящая таблетница
+let cells, st, log, cfg, demoClock, linked, paired, notifOn, onboarded, tab, view, draft, picker, notifs, shade, huNotif,
+    sheetKey, alarmKey, splashOn, scanStep, dlg, openDay, curDay, devName = 'Pillbox-3F2A', errNote = '';
+
+const toMin = t => +t.slice(0, 2) * 60 + +t.slice(3);
+const hhmm = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const hhmmD = d => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+const nowMin = () => { if (mode === 'demo') return demoClock; const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const DEMO_DATE = new Date(2026, 8, 26);
+const today = () => mode === 'demo' ? new Date(DEMO_DATE) : new Date();
+const dkey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const dow = d => (d.getDay() + 6) % 7;             // Пн = 0
+const WD = () => lang === 'ru' ? ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'] : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const MON = () => lang === 'ru' ? ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayName = d => `${WD()[dow(d)]} ${d.getDate()} ${MON()[d.getMonth()]}`;
+
+function resetDemo() {
+  mode = 'demo';
+  cells = demoCells();
+  st = { '0|08:00': { s: 't', at: '08:05' }, '1|09:30': { s: 't', at: '09:40' }, '2|13:00': { s: 'm' }, '1|14:00': { s: 't', at: '15:27' } };
+  demoClock = 19 * 60 + 45;
+  cfg = { bright: 1, night: true, sound: true, phone: true, missed: true, range: true };
+  linked = true; paired = true; notifOn = true; onboarded = true;
+  tab = 'today'; view = null; draft = null; picker = null; shade = false; huNotif = null; sheetKey = null; alarmKey = null; openDay = null;
+  scanStep = 0; dlg = null; errNote = '';
+  notifs = [{ id: 'svc', kind: 'service' }, { id: 'miss2|13:00', kind: 'missed', key: '2|13:00' }];
+  buildDemoLog();
+}
+/* прошлые дни демо-недели: исключения из «всё вовремя» */
+const WEEK_EXC = { '0|3|20:00': '20:47', '1|2|13:00': 'm', '2|1|09:30': '10:15', '3|0|22:00': 'm', '4|2|13:00': '13:52' };
+function buildDemoLog() {
+  log = {};
+  for (let day = 0; day < 5; day++) {
+    const d = new Date(2026, 8, 21 + day);
+    log[dkey(d)] = scheduleFor(d).map(x => {
+      const e = WEEK_EXC[day + '|' + x.k];
+      return { t: x.t, cell: x.cell, name: cells[x.cell].name, s: e === 'm' ? 'm' : 't', at: e && e !== 'm' ? e : hhmm(toMin(x.t) + (day * 5 + x.cell * 3) % 9) };
+    });
+  }
+  snapshotToday();
+}
+
+function scheduleFor(d) {
+  const a = [];
+  cells.forEach((c, i) => { if (!c || !c.days[dow(d)]) return; c.times.forEach(t => a.push({ cell: i, t, k: i + '|' + t })); });
+  return a.sort((x, y) => x.t < y.t ? -1 : x.t > y.t ? 1 : x.cell - y.cell);
+}
+const todayDoses = () => scheduleFor(today());
+function stOf(d) { return st[d.k] || { s: toMin(d.t) < nowMin() ? 'x' : 'w' }; }
+function nextDose() {
+  const ds = todayDoses();
+  return ds.find(d => stOf(d).s === 'a') || ds.find(d => stOf(d).s === 's') || ds.find(d => stOf(d).s === 'w');
+}
+function inText(min) {
+  if (min <= 0) return L('NOW', 'СЕЙЧАС');
+  const h = Math.floor(min / 60), m = min % 60;
+  return L('IN ', 'ЧЕРЕЗ ') + (h ? h + L(' H ', ' Ч ') : '') + (m || !h ? m + L(' MIN', ' МИН') : '');
+}
+function snapshotToday() {
+  log[dkey(today())] = todayDoses().map(d => { const s = stOf(d); return { t: d.t, cell: d.cell, name: cells[d.cell].name, s: s.s, at: s.at || '' }; });
+}
+
+/* ------------------------ хранение (только настоящий режим) ------------------------ */
+const SKEY = 'lolid.pillbox.v1';
+function save() {
+  if (mode !== 'live') return;
+  try { localStorage.setItem(SKEY, JSON.stringify({ cells, st, day: dkey(today()), log, cfg, lang, paired, devName })); } catch (e) { }
+}
+function loadLive() {
+  let o = null;
+  try { o = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { }
+  mode = 'live';
+  cells = o && o.cells || [null, null, null, null];
+  cfg = o && o.cfg || { bright: 1, night: true, sound: true, phone: true, missed: true, range: true };
+  log = o && o.log || {};
+  st = o && o.day === dkey(today()) ? o.st || {} : {};
+  if (o && o.lang) lang = o.lang;
+  paired = !!(o && o.paired); devName = o && o.devName || 'Pillbox';
+  linked = false; notifOn = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  onboarded = paired; tab = 'today'; view = null; draft = null; picker = null; shade = false; huNotif = null; sheetKey = null; alarmKey = null;
+  scanStep = 0; dlg = null; notifs = []; openDay = null; errNote = ''; curDay = dkey(today());
+  // старые записи больше 60 дней не храним
+  const lim = dkey(new Date(Date.now() - 60 * 864e5));
+  Object.keys(log).forEach(k => { if (k < lim) delete log[k]; });
+}
+/* любое изменение приёмов/ячеек: запомнить, отправить на таблетницу, перерисовать */
+function changed(sendDay = true) {
+  snapshotToday(); save();
+  if (sendDay) bleSend(dayLine());
+  nativeSync();
+  render();
+}
+/* Android: сервису нужно расписание, чтобы звонить, когда приложение закрыто */
+function nativeSync() {
+  if (!NATIVE || mode !== 'live') return;
+  const lines = [`CFG|lang|${lang}`, `CFG|bright|${cfg.bright}`, `CFG|night|${cfg.night ? '22-7' : 'off'}`, `CFG|sound|${cfg.sound ? 1 : 0}`, ...cells.map((c, i) => c ? cellLine(c, i) : `CLEAR|${i + 1}`)];
+  try {
+    AndroidPillbox.sync(JSON.stringify({ lang, cfg: { phone: cfg.phone, missed: cfg.missed, range: cfg.range }, day: dkey(today()), st, lines,
+      cells: cells.map(c => c ? { name: c.name, dose: doseText(c), instr: instr(c), times: c.times, days: c.days } : null) }));
+  } catch (e) { }
+}
+/* Android: забрать события, случившиеся, пока страница была закрыта */
+function nativeMerge() {
+  try {
+    const ns = JSON.parse(AndroidPillbox.state());
+    if (ns.day === dkey(today()) && ns.st) Object.assign(st, ns.st);
+    linked = !!ns.linked;
+    if (ns.paired) { paired = true; onboarded = true; }
+    if (ns.name) devName = ns.name;
+  } catch (e) { }
+  snapshotToday(); save(); nativeSync();
+}
+
+/* =========================== BLUETOOTH (Nordic UART) =========================== */
+const NUS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e', NUS_RX = '6e400002-b5a3-f393-e0a9-e50e24dcca9e', NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+let bleDev = null, rxCh = null, rxBuf = '', wq = Promise.resolve();
+const enc = new TextEncoder(), dec = new TextDecoder();
+function clip(s, bytes) { s = String(s).replace(/[|\r\n]/g, ' ').replace(/½/g, ' 1/2').trim(); while (enc.encode(s).length > bytes) s = s.slice(0, -1); return s; }
+function bleSend(line) {
+  if (NATIVE) { if (mode === 'live' && linked) AndroidPillbox.send(line); return; }
+  if (mode !== 'live' || !rxCh || !linked) return;
+  const b = enc.encode(line + '\n');
+  wq = wq.then(async () => {
+    for (let i = 0; i < b.length; i += 20) {  // по 20 байт — влезает в любой BLE-пакет; таблетница собирает строку до \n
+      const part = b.slice(i, i + 20);
+      if (rxCh.writeValueWithResponse) await rxCh.writeValueWithResponse(part); else await rxCh.writeValue(part);
+    }
+  }).catch(e => console.warn('BLE write', e));
+}
+const devDose = c => clip(`${fmtAmt(c.amount)} ${unit(c.form, c.amount)}`, 46);
+const cellLine = (c, i) => `CELL|${i + 1}|${c.form}|FFFFFF|${clip(c.name, 70)}|${devDose(c)}|${clip(instr(c), 250)}`;
+function dayLine() {
+  return 'DAY|' + todayDoses().slice(0, 16).map(d => {
+    const s = stOf(d); let c = s.s === 'x' ? 'w' : s.s;
+    return `${d.t},${d.cell + 1},${c}${s.s === 't' && s.at ? '@' + s.at : ''}`;
+  }).join(';');
+}
+function syncAll() {
+  bleSend(`TIME|${Math.floor(Date.now() / 1000)}|${-new Date().getTimezoneOffset()}`);
+  bleSend(`CFG|lang|${lang}`);
+  bleSend(`CFG|bright|${cfg.bright}`);
+  bleSend(`CFG|night|${cfg.night ? '22-7' : 'off'}`);
+  bleSend(`CFG|sound|${cfg.sound ? 1 : 0}`);
+  cells.forEach((c, i) => bleSend(c ? cellLine(c, i) : `CLEAR|${i + 1}`));
+  bleSend(dayLine());
+}
+async function bleConnect(fresh) {
+  errNote = '';
+  if (NATIVE) { scanStep = 1; render(); AndroidPillbox.connect(); return; }
+  if (!navigator.bluetooth) { errNote = L('This browser has no Bluetooth.\nOn iPhone open this page in Bluefy.', 'В этом браузере нет Bluetooth.\nНа iPhone откройте страницу в Bluefy.'); render(); return; }
+  audioUnlock();
+  try {
+    if (!bleDev || fresh) {
+      scanStep = 1; render();
+      bleDev = await navigator.bluetooth.requestDevice({ filters: [{ services: [NUS] }, { namePrefix: 'Pillbox' }], optionalServices: [NUS] });
+      bleDev.addEventListener('gattserverdisconnected', onBleLost);
+    }
+    scanStep = 2; render();
+    const srv = await bleDev.gatt.connect();
+    const svc = await srv.getPrimaryService(NUS);
+    rxCh = await svc.getCharacteristic(NUS_RX);
+    const tx = await svc.getCharacteristic(NUS_TX);
+    tx.addEventListener('characteristicvaluechanged', e => onBleData(dec.decode(e.target.value)));
+    await tx.startNotifications();
+    linked = true; paired = true; devName = bleDev.name || 'Pillbox'; scanStep = 0;
+    if (!onboarded) { onboarded = true; tab = cells.some(Boolean) ? 'today' : 'cells'; }
+    syncAll(); save(); wakeLock();
+    toast(L('Linked. Schedule sent to the pillbox.', 'Связь есть. Расписание отправлено на таблетницу.'));
+  } catch (e) {
+    scanStep = 0; linked = false;
+    errNote = e && e.name === 'NotFoundError' ? '' : L('Could not connect: ', 'Не удалось связаться: ') + (e && e.message || e);
+  }
+  render();
+}
+function onBleLost() {
+  linked = false; rxCh = null;
+  toast(L('Pillbox out of reach. The phone will remind you on its own.', 'Таблетница вне связи. Телефон будет напоминать сам.'));
+  render();
+  setTimeout(() => { if (!linked && bleDev && mode === 'live') bleConnect(false); }, 4000);   // тихо пробуем вернуть связь
+}
+function onBleData(chunk) {
+  rxBuf += chunk;
+  let i;
+  while ((i = rxBuf.indexOf('\n')) >= 0) { const line = rxBuf.slice(0, i).trim(); rxBuf = rxBuf.slice(i + 1); if (line) onEvent(line); }
+}
+function onEvent(line) {
+  const f = line.split('|'), k = f[0];
+  if (!['TAKEN', 'SNOOZE', 'MISSED', 'ALARM'].includes(k)) return;
+  const cell = +f[1] - 1, t = f[2], key = cell + '|' + t, c = cells[cell];
+  if (!c) return;
+  if (k === 'TAKEN') {
+    const at = +f[3] ? hhmmD(new Date(+f[3] * 1000)) : hhmm(nowMin());
+    st[key] = { s: 't', at };
+    if (alarmKey === key) closeAlarm();
+    toast(L(`${c.name}: taken at ${at}.`, `${c.name}: принято в ${at}.`));
+  } else if (k === 'SNOOZE') {
+    st[key] = { s: 's', until: hhmm(nowMin() + (+f[3] || 10)) };
+    if (alarmKey === key) closeAlarm();
+  } else if (k === 'MISSED') {
+    st[key] = { s: 'm' };
+    if (alarmKey === key) closeAlarm();
+    if (cfg.missed) phoneNotify(L(`Missed: ${c.name} at ${t}`, `Пропущено: ${c.name} в ${t}`), L('Took it later? Open the app and mark it.', 'Выпили позже? Отметьте в приложении.'));
+  } else if (k === 'ALARM') {
+    if (!st[key] || st[key].s !== 'a') { st[key] = { s: 'a', since: nowMin() }; openAlarm(key); }
+  }
+  changed(false);
+}
+
+/* ------------------------- напоминания в телефоне ------------------------- */
+let actx = null, beepTm = null, wl = null;
+function audioUnlock() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { } }
+function beep() {
+  if (!actx || view !== 'alarm') return;
+  [0, 0.28].forEach(d => {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 1320; o.type = 'sine';
+    g.gain.setValueAtTime(0.0001, actx.currentTime + d);
+    g.gain.exponentialRampToValueAtTime(0.25, actx.currentTime + d + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + d + 0.2);
+    o.connect(g).connect(actx.destination); o.start(actx.currentTime + d); o.stop(actx.currentTime + d + 0.22);
+  });
+  if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
+}
+function phoneNotify(title, body) {
+  if (mode !== 'live' || NATIVE) return;   // в Android уведомления показывает сервис
+  try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification(title, { body, tag: 'lolid' }); } catch (e) { }
+}
+async function wakeLock() { try { if (navigator.wakeLock && !wl) { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => wl = null); } } catch (e) { } }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && mode === 'live') { if (linked) wakeLock(); tick(true); } });
+
+function openAlarm(key) {
+  alarmKey = key; view = 'alarm'; sheetKey = null; picker = null;
+  if (mode === 'live' && cfg.phone && !NATIVE) {
+    const [ci, t] = key.split('|'), c = cells[+ci];
+    phoneNotify(L(`Time to take ${c.name}`, `Пора принять: ${c.name}`), `${t} · ${L('cell', 'ячейка')} ${+ci + 1} · ${doseText(c)}`);
+    clearInterval(beepTm); beep(); beepTm = setInterval(beep, 2000);
+  }
+}
+function closeAlarm() { view = null; alarmKey = null; clearInterval(beepTm); }
+
+/* каждые 15 с в настоящем режиме: пора ли звонить */
+let lastTickMin = -1;
+function tick(force) {
+  if (mode !== 'live' || !onboarded) return;
+  const k = dkey(today());
+  if (curDay !== k) { curDay = k; st = {}; save(); }
+  const now = nowMin();
+  if (!NATIVE) todayDoses().forEach(d => {   // в Android время приёма отслеживает сервис
+    const s = st[d.k], tm = toMin(d.t);
+    if (!s && tm <= now && now - tm <= 2) startDose(d.k);                                        // время пришло
+    else if (s && s.s === 's' && toMin(s.until) <= now && !linked) startDose(d.k);              // отложенный (без таблетницы)
+    else if (s && s.s === 'a' && !linked && now - (s.since ?? now) >= 30) { st[d.k] = { s: 'm' }; if (alarmKey === d.k) closeAlarm(); changed(false); }
+  });
+  if (force || now !== lastTickMin) { lastTickMin = now; if (!draft && !picker && !sheetKey) render(); }
+}
+setInterval(tick, 15000);
+function startDose(key) {
+  const [ci, t] = key.split('|');
+  st[key] = { s: 'a', since: nowMin() };
+  if (linked) bleSend(`ALARM|${+ci + 1}|${t}`);
+  openAlarm(key);
+  changed(false);
+}
+
+/* ------------------------------ действия ------------------------------ */
+let toastMsg = '', toastTm;
+function toast(m) { toastMsg = m; clearTimeout(toastTm); toastTm = setTimeout(() => { toastMsg = ''; render(); }, 3000); }
+function markTaken(key, at) {
+  st[key] = { s: 't', at };
+  const [ci] = key.split('|'), c = cells[+ci];
+  dropNotif('dose'); dropNotif('off'); dropNotif('miss' + key);
+  if (alarmKey === key) closeAlarm();
+  bleSend(`STOP|${+ci + 1}`);
+  toast(linked ? L(`${c.name}: taken at ${at}. The pillbox knows.`, `${c.name}: принято в ${at}. Таблетница в курсе.`)
+               : L(`${c.name}: taken at ${at}. The pillbox learns when it’s back.`, `${c.name}: принято в ${at}. Таблетница узнает, когда вернётся связь.`));
+  changed(true);
+}
+function snoozeNow(key) {
+  const until = hhmm(nowMin() + 10);
+  st[key] = { s: 's', until };
+  dropNotif('dose'); dropNotif('off');
+  if (alarmKey === key) closeAlarm();
+  bleSend(`SNOOZE|${+key.split('|')[0] + 1}`);
+  toast(L(`Reminder again at ${until}`, `Напомню снова в ${until}`));
+  changed(false);
+}
+
+/* ------------------------ демо: что «делает» таблетница ------------------------ */
+const DEMO_KEY = '3|20:00';
+function demoRing() { const s = st[DEMO_KEY]; return s && (s.s === 'a' || s.s === 's'); }
+const sim = {
+  dose() {
+    if (mode !== 'demo') return;
+    demoClock = 20 * 60; sheetKey = null; shade = false; picker = null;
+    if (!cells[3] || !cells[3].times.includes('20:00')) { toast(L('Cell 4 has no 20:00 dose. Reset the demo.', 'В ячейке 4 нет приёма в 20:00. Сбросьте демо.')); return; }
+    if (st[DEMO_KEY] && st[DEMO_KEY].s === 't') { toast(L('Already taken. Reset the demo to ring again.', 'Уже принято. Сбросьте демо, чтобы позвонить снова.')); return; }
+    st[DEMO_KEY] = { s: 'a' };
+    if (!cfg.phone) { toast(L('Phone reminders are off. Only the pillbox rings.', 'Напоминания на телефоне выключены. Звонит только таблетница.')); changed(false); return; }
+    pushNotif({ id: linked ? 'dose' : 'off', kind: linked ? 'dose' : 'offline', key: DEMO_KEY });
+    changed(false);
+  },
+  boxTaken() {
+    if (!demoRing()) return;
+    if (!linked) { toast(L('The pillbox is out of range.', 'Таблетница вне связи.')); return; }
+    demoClock = Math.max(demoClock, 20 * 60 + 2);
+    st[DEMO_KEY] = { s: 't', at: hhmm(demoClock) };
+    dropNotif('dose'); if (alarmKey === DEMO_KEY) closeAlarm();
+    pushNotif({ id: 'tb', kind: 'takenbox', key: DEMO_KEY, at: hhmm(demoClock) });
+    changed(false);
+  },
+  noAnswer() {
+    if (!demoRing()) return;
+    demoClock = 20 * 60 + 15;
+    st[DEMO_KEY] = { s: 'm' }; dropNotif('dose'); dropNotif('off'); if (alarmKey === DEMO_KEY) closeAlarm();
+    if (cfg.missed) pushNotif({ id: 'miss' + DEMO_KEY, kind: 'missed', key: DEMO_KEY });
+    changed(false);
+  },
+  range() {
+    linked = !linked;
+    if (!linked && cfg.range) pushNotif({ id: 'range', kind: 'range' });
+    else { dropNotif('range'); toast(linked ? L('Pillbox back in range. Schedule synced.', 'Таблетница снова на связи. Расписание обновлено.') : L('Pillbox out of range.', 'Таблетница вне связи.')); }
+  },
+  first() { resetDemo(); onboarded = false; linked = false; paired = false; notifOn = false; notifs = []; },
+  reset() { resetDemo(); toast(L('Demo reset. 19:45, Saturday.', 'Демо сброшено. 19:45, суббота.')); },
+  splash() { startSplash(); }
+};
+
+/* ------------------------ уведомления Android (демо) ------------------------ */
+function notifHTML(n) {
+  const c = n.key ? cells[+n.key.split('|')[0]] : null, t = n.key ? n.key.split('|')[1] : '', cn = n.key ? +n.key.split('|')[0] + 1 : 0;
+  let ti = '', tx = '', acts = [], when = L('now', 'сейчас');
+  if (n.kind === 'service') {
+    when = '';
+    ti = linked ? L(`Connected to ${devName}`, `Подключено к ${devName}`) : L('Looking for your pillbox', 'Ищу таблетницу');
+    tx = L('Keeps the link so doses reach the pillbox on time.', 'Держит связь, чтобы приёмы вовремя приходили на таблетницу.');
+  } else if (n.kind === 'dose') {
+    ti = L(`Time to take ${c.name}`, `Пора принять: ${c.name}`);
+    tx = `${t} · ${L('cell', 'ячейка')} ${cn} · ${doseText(c)}. ${instr(c)}`;
+    acts = [['taken', L('Taken', 'Принял')], ['snooze', L('Snooze 10 min', 'Отложить на 10 мин')]];
+  } else if (n.kind === 'offline') {
+    ti = L(`Take ${c.name} from cell ${cn}`, `Примите ${c.name} из ячейки ${cn}`);
+    tx = L(`${t} · The pillbox is out of reach and can’t ring. ${doseText(c)}.`, `${t} · Таблетница вне связи и не зазвонит. ${doseText(c)}.`);
+    acts = [['taken', L('Taken', 'Принял')], ['snooze', L('Snooze 10 min', 'Отложить на 10 мин')]];
+  } else if (n.kind === 'missed') {
+    when = n.key === '2|13:00' ? '13:30' : L('now', 'сейчас');
+    ti = L(`Missed: ${c.name} at ${t}`, `Пропущено: ${c.name} в ${t}`);
+    tx = L('No one pressed Taken on the pillbox. Took it later? Mark it.', 'На таблетнице никто не нажал «Принял». Выпили позже? Отметьте.');
+    acts = [['open', L('Mark as taken', 'Отметить приём')]];
+  } else if (n.kind === 'takenbox') {
+    ti = L(`Taken on the pillbox at ${n.at}`, `Принято на таблетнице в ${n.at}`);
+    tx = `${c.name} · ${L('cell', 'ячейка')} ${cn}`;
+  } else if (n.kind === 'range') {
+    ti = L('Pillbox out of reach', 'Таблетница вне связи');
+    tx = L('Doses will ring on this phone until it’s back.', 'Пока связи нет, напоминать будет телефон.');
+  }
+  return `<div class="nc" data-nid="${n.id}" role="button" tabindex="0">
+    <div class="top"><span class="si">L</span>Lolid${when ? ' · ' + when : ''}</div>
+    <div class="ti">${esc(ti)}</div><div class="tx">${esc(tx)}</div>
+    ${acts.length ? `<div class="na">${acts.map(a => `<button data-na="${a[0]}" data-nid="${n.id}">${a[1]}</button>`).join('')}</div>` : ''}</div>`;
+}
+function pushNotif(n) {
+  if (!notifOn) return;
+  notifs = notifs.filter(x => x.id !== n.id); notifs.unshift(n);
+  huNotif = n; clearTimeout(pushNotif.tm);
+  if (n.kind !== 'dose' && n.kind !== 'offline') pushNotif.tm = setTimeout(() => { huNotif = null; render(); }, 5200);
+}
+function dropNotif(id) { notifs = notifs.filter(n => n.id !== id); if (huNotif && huNotif.id === id) huNotif = null; }
+
+/* =============================== ЭКРАНЫ =============================== */
+function header(inv) {
+  let state;
+  if (!onboarded && !linked) state = scanStep === 1 ? L('SCANNING', 'ПОИСК') : scanStep === 2 ? L('LINKING', 'СВЯЗЬ') : L('OFFLINE', 'НЕТ СВЯЗИ');
+  else if (linked) state = Object.values(st).some(x => x.s === 'a') ? L('RINGING', 'ЗВОНИТ') : L('LINKED', 'НА СВЯЗИ');
+  else state = scanStep ? L('LINKING', 'СВЯЗЬ') : L('OFFLINE', 'НЕТ СВЯЗИ');
+  const reconnect = mode === 'live' && onboarded && !linked && !scanStep && !inv;
+  return `<div class="hd"><span class="brand">LOLID</span><span class="sp"></span>${BT(linked, inv ? '#fff' : 'var(--bt)')}
+    ${reconnect ? `<button class="state" id="reconnect">${L('RECONNECT', 'ПОДКЛЮЧИТЬ')}</button>` : `<span class="state">${state}</span>`}</div><div class="rule"></div>`;
+}
+
+function vOnboarding() {
+  const web = PHONE && !NATIVE;
+  let h = header() + `<div class="eyebrow">${L('First run', 'Первый запуск')}</div>
+  <h2 class="ch">${L('Pair the<br>pillbox', 'Свяжите<br>таблетницу')}</h2>
+  <p class="cp">${L('The phone keeps the schedule and the time. The pillbox rings and shows what to take.', 'Телефон хранит расписание и время. Таблетница звонит и показывает, что принять.')}</p>
+  <div class="card" style="margin-top:16px">
+    <div class="row"><div class="rt"><span class="rn">01</span><span class="rl">${L('Plug it in', 'Включите её')}</span></div><p class="rd">${L('The pillbox shows the Lolid logo, then the clock.', 'На таблетнице появится логотип Lolid, потом часы.')}</p></div>
+    <div class="row"><div class="rt"><span class="rn">02</span><span class="rl">${L('Tap connect', 'Нажмите «Связать»')}</span></div><p class="rd">${L('Pick the pillbox from the list. Its name is in its settings.', 'Выберите таблетницу в списке. Её имя — в её настройках.')}</p></div>
+    <div class="row"><div class="rt"><span class="rn">03</span><span class="rl">${web ? L('Keep this page open', 'Не закрывайте страницу') : L('Allow notifications', 'Разрешите уведомления')}</span></div><p class="rd">${web ? L('A web page can only remind you while it’s open. The pillbox rings on its own either way.', 'Страница напоминает, только пока открыта. Таблетница звонит сама в любом случае.') : L('Doses arrive on the phone too, even when the app is closed.', 'Напоминания придут и на телефон, даже если приложение закрыто.')}</p></div>
+  </div>`;
+  if (FRAME && scanStep === 1) h += `<div class="devlist"><button id="pick"><b>Pillbox-3F2A</b><span>${L('STRONG SIGNAL', 'СИГНАЛ ХОРОШИЙ')}</span></button></div><div class="note">${L('Found one pillbox nearby.', 'Рядом найдена одна таблетница.')}</div>`;
+  else h += `<div class="acts"><button class="btn pri" id="connect" ${scanStep ? 'disabled' : ''}>${BT(true, '#fff')} ${L('Connect', 'Связать')}</button></div>
+     ${PHONE ? `<div class="acts" style="margin-top:8px"><button class="btn soft" id="tryDemo">${L('Try the demo first', 'Сначала посмотреть демо')}</button></div>` : ''}
+     <div class="note${errNote ? ' err' : ''}">${errNote || (scanStep === 2 ? L('Linking…', 'Связываюсь…') : scanStep === 1 ? L('Choose the pillbox in the list.', 'Выберите таблетницу в списке.') : L('Keep the phone within a few metres.', 'Держите телефон в нескольких метрах.'))}</div>`;
+  return h;
+}
+
+function statusCell(d) {
+  const s = stOf(d);
+  if (s.s === 't') { const late = toMin(s.at) - toMin(d.t); return `<div class="stt">${L('Taken', 'Принято')}<small>${s.at}</small>${late > 30 ? `<span class="late">+${late} ${L('min', 'мин')}</span>` : ''}</div>`; }
+  if (s.s === 'm') return `<div class="stt m">${L('Missed', 'Пропущено')}</div>`;
+  if (s.s === 'a') return `<div class="stt a">${L('Ringing', 'Звонит')}</div>`;
+  if (s.s === 's') return `<div class="stt">${L('Snoozed', 'Отложено')}<small>${s.until}</small></div>`;
+  if (s.s === 'x') return `<div class="stt x">${L('No mark', 'Нет отметки')}</div>`;
+  return `<div class="stt w">${L('Later', 'Позже')}</div>`;
+}
+
+function vToday() {
+  const ds = todayDoses(), nx = nextDose(), taken = ds.filter(d => stOf(d).s === 't').length;
+  let h = header();
+  if (mode === 'live' && !linked) h += `<div class="warn"><b>${L('The pillbox is not connected. The phone reminds you while this page is open.', 'Таблетница не подключена. Напоминает телефон, пока страница открыта.')}</b><button class="btn" id="reconnect2">${L('Connect', 'Связать')}</button></div>`;
+  if (FRAME && !notifOn) h += `<div class="warn"><b>${L('Phone notifications are blocked. Only the pillbox will ring.', 'Уведомления на телефоне запрещены. Звонить будет только таблетница.')}</b><button class="btn" id="fixN">${L('Allow', 'Разрешить')}</button></div>`;
+  if (!cells.some(Boolean)) {
+    return h + `<div class="eyebrow">${L('Today', 'Сегодня')}</div><h2 class="ch">${L('Nothing<br>to take yet', 'Пока нечего<br>принимать')}</h2>
+      <p class="cp">${L('Fill a cell: choose the form, the name and the time.', 'Заполните ячейку: форма, название и время.')}</p>
+      <div class="acts"><button class="btn pri" data-tab="cells">${L('Fill cells', 'Заполнить ячейки')}</button></div>`;
+  }
+  if (!ds.length) return h + `<div class="eyebrow">${dayName(today())}</div><h2 class="ch">${L('No doses<br>today', 'Сегодня<br>приёмов нет')}</h2><p class="cp">${noDosesText()}</p>`;
+  if (nx) {
+    const s = stOf(nx), c = cells[nx.cell], ring = s.s === 'a', snz = s.s === 's';
+    h += `<div class="eyebrow">${ring ? L('Take now', 'Примите сейчас') : snz ? L('Snoozed dose', 'Отложенный приём') : L('Next dose', 'Следующий приём')}</div>
+      <div class="huge">${snz ? s.until : nx.t}</div>
+      <button class="band${ring ? ' red' : ''}" id="nextBand"><b>${L('Cell', 'Ячейка')} ${nx.cell + 1} · ${esc(c.name)}</b><i>${ring ? L('NOW', 'СЕЙЧАС') : inText(toMin(snz ? s.until : nx.t) - nowMin())}</i></button>`;
+  } else {
+    h += `<div class="eyebrow">${L('Today', 'Сегодня')}</div><div class="huge word">${L('All done<br>for today', 'На сегодня<br>всё')}</div><div style="height:14px"></div>`;
+  }
+  h += `<div class="prog"><span class="k">${L('Taken today', 'Принято сегодня')}</span><span class="v num">${taken} / ${ds.length}</span></div>
+    <div class="segs">${ds.map(d => { const s = stOf(d).s; return `<i class="${s === 't' ? 't' : s === 'm' ? 'm' : s === 'a' ? 'a' : ''}"></i>`; }).join('')}</div>
+    <div class="eyebrow" style="margin-top:22px">${dayName(today())}</div>
+    <div class="card list">${ds.map(d => { const c = cells[d.cell];
+      return `<button class="dose" data-key="${d.k}"><div class="dt">${d.t}</div>
+        <div style="min-width:0"><div class="dn"><span class="cno">${d.cell + 1}</span><span>${esc(c.name)}</span></div><div class="dd">${doseText(c)}</div></div>
+        ${statusCell(d)}</button>`; }).join('') || `<p class="cp" style="padding:14px 0">${noDosesText()}</p>`}</div>`;
+  return h;
+}
+
+/* ближайший день недели, когда назначен приём */
+function nextDayName(days) {
+  for (let k = 1; k <= 7; k++) { const d = new Date(today()); d.setDate(d.getDate() + k); if (days[dow(d)]) return k === 1 ? L('tomorrow', 'завтра') : L(WD()[dow(d)], WD()[dow(d)].toLowerCase()); }
+  return '—';
+}
+function noDosesText() {
+  for (let k = 1; k <= 7; k++) {
+    const d = new Date(today()); d.setDate(d.getDate() + k);
+    const x = scheduleFor(d)[0];
+    if (x) return L(`Next: ${k === 1 ? 'tomorrow' : WD()[dow(d)]} at ${x.t}, cell ${x.cell + 1}.`, `Следующий приём: ${k === 1 ? 'завтра' : WD()[dow(d)].toLowerCase()} в ${x.t}, ячейка ${x.cell + 1}.`);
+  }
+  return L('Nothing is scheduled this week. Add times in Cells.', 'На этой неделе ничего не назначено. Добавьте время в «Ячейках».');
+}
+
+function vCells() {
+  let h = header() + `<div class="eyebrow">${L('Cells', 'Ячейки')}</div>
+    <h2 class="ch">${L('What’s<br>inside', 'Что<br>внутри')}</h2>
+    <p class="cp">${L('Numbers match the lids on the pillbox. Tap a cell to change it.', 'Номера — как на крышках таблетницы. Нажмите на ячейку, чтобы изменить.')}</p><div class="card" style="margin-top:16px">`;
+  cells.forEach((c, i) => {
+    if (!c) { h += `<button class="cellrow empty" data-cell="${i}"><span class="rn">0${i + 1}</span><span></span><span><div class="nm">${L('Empty', 'Пусто')}</div><div class="dsc">${L('Tap to fill this cell.', 'Нажмите, чтобы заполнить.')}</div></span></button>`; return; }
+    h += `<button class="cellrow" data-cell="${i}"><span class="rn">0${i + 1}</span>${ic(c.form, 30, 2)}
+      <span><div class="nm">${esc(c.name)}</div><div class="dsc">${doseText(c)} · ${shortHow(c)}</div>
+      <div class="tms">${c.times.join(' · ')} <span class="muted" style="font-weight:600">· ${c.days.every(Boolean) ? L('every day', 'каждый день') : L('some days', 'по дням')}</span></div></span></button>`;
+  });
+  h += '</div>';
+  if (mode === 'live' && !cells.some(Boolean)) h += `<div class="acts"><button class="btn soft" id="fillExamples">${L('Fill with examples', 'Заполнить примерами')}</button></div>`;
+  return h;
+}
+
+function devPreview(c, idx) {
+  return `<div class="devframe" aria-label="${L('Pillbox screen preview', 'Экран таблетницы')}"><div class="devs">
+    <div class="n">${idx + 1}</div><div class="c">${L('CELL', 'ЯЧЕЙКА')}</div><div class="f">${formName(c.form).toLowerCase()}</div>
+    <div class="ln" style="top:60px"></div><div class="ic">${ic(c.form, 36, 2, 'var(--ink)')}</div>
+    <div class="nm">${esc(c.name || L('Name', 'Название'))}</div>
+    <div class="body"><b>${doseText(c)}</b><span>${esc(instr(c))}</span></div>
+    <div class="tm">${L('Today', 'Сегодня')} ${c.times.join(', ')}</div>
+    <div class="ln" style="top:256px"></div><div class="bk">${ic('arrow', 18, 2.4, 'var(--ink)')}${L('Back', 'Назад')}</div></div></div>`;
+}
+
+function vEditor() {
+  const c = draft.c, i = draft.i, wopt = WATER_OPT(c.method), flags = FLAGS(c.method);
+  const note = (lang === 'ru' ? c.noteRu ?? c.note : c.note) || '';
+  let h = header() + `<div class="eyebrow">${L('Cell', 'Ячейка')} 0${i + 1}${draft.isNew ? ' · ' + L('new', 'новая') : ''}</div>
+    <h2 class="ch" id="edTitle">${c.name ? esc(c.name) : L('New<br>medicine', 'Новое<br>лекарство')}</h2>
+    <div class="lab">${L('Form', 'Форма')}</div>
+    <div class="forms">${FORMS.map(f => `<button data-form="${f}" class="${c.form === f ? 'on' : ''}" aria-pressed="${c.form === f}">${ic(f, 30, 2)}${formName(f)}</button>`).join('')}</div>
+    <div class="lab"><label for="fName">${L('Name', 'Название')}</label></div>
+    <input class="inp big" id="fName" maxlength="40" autocomplete="off" value="${esc(c.name)}" placeholder="${L('e.g. Aspirin Cardio', 'Например, Аспирин Кардио')}">
+    <div class="lab">${L('Dose', 'Доза')}<em>${L('each time', 'за один приём')}</em></div>
+    <div class="step"><button data-amt="-1" aria-label="${L('Less', 'Меньше')}">−</button><output id="amt">${fmtAmt(c.amount)}</output><button data-amt="1" aria-label="${L('More', 'Больше')}">+</button><span class="unit">${unit(c.form, c.amount)}</span></div>
+    <div class="lab">${L('How to take', 'Как принимать')}<em>${formName(c.form).toLowerCase()}</em></div>
+    <div class="chips">${METHODS[c.form].map(m => `<button data-method="${m}" class="${c.method === m ? 'on' : ''}" aria-pressed="${c.method === m}">${methodName(m)}</button>`).join('')}</div>`;
+  if (wopt.length) h += `<div class="lab">${L('Water', 'Вода')}</div><div class="chips ${wopt.length === 3 ? 'c3' : ''}">${wopt.map(w => `<button data-water="${w}" class="${c.water === w ? 'on' : ''}" aria-pressed="${c.water === w}">${waterName(w)}</button>`).join('')}</div>`;
+  if (!NO_FOOD.includes(c.method)) {
+    h += `<div class="lab">${L('Food', 'Еда')}</div><div class="chips">${FOODS.map((f, k) => `<button data-food="${f}" class="${c.food === f ? 'on' : ''}${k === 4 ? ' wide' : ''}" aria-pressed="${c.food === f}">${foodName(f)}</button>`).join('')}</div>`;
+    if (c.food === 'before') h += `<div class="chips c3" style="margin-top:6px">${[15, 30, 60].map(n => `<button data-before="${n}" class="${c.before === n ? 'on' : ''}">${L(`${n} min before`, `за ${n} мин`)}</button>`).join('')}</div>`;
+  }
+  if (flags.length) h += flags.map(f => `<button class="tog" data-flag="${f}"><span><b>${flagName(f)}</b></span><span class="sw${c.flags[f] ? ' on' : ''}"><i></i></span></button>`).join('');
+  h += `<div class="lab"><label for="fNote">${L('Note', 'Заметка')}</label><em>${L('optional', 'если нужно')}</em></div>
+    <textarea class="inp" id="fNote" rows="2" maxlength="120" placeholder="${L('e.g. Not with milk.', 'Например, не запивать молоком.')}">${esc(note)}</textarea>
+    <div class="lab">${L('Times', 'Время приёма')}<em>${c.times.length} ${L(c.times.length === 1 ? 'time a day' : 'times a day', ruPl(c.times.length, ['раз', 'раза', 'раз']) + ' в день')}</em></div>
+    <div class="card times">${c.times.map((t, k) => `<div class="tr"><button class="tb" data-edittime="${k}"><b>${t}</b><span>${L('change', 'изменить')}</span></button><button class="del" data-deltime="${k}">${L('Remove', 'Убрать')}</button></div>`).join('') || `<p class="cp" style="padding:12px 0">${L('No times yet.', 'Время пока не задано.')}</p>`}</div>
+    <div class="addt"><button class="btn" id="addTime">+ ${L('Add time', 'Добавить время')}</button></div>
+    <div class="lab">${L('Days', 'Дни')}</div>
+    <div class="chips">${[['every', L('Every day', 'Каждый день')], ['some', L('Some days', 'По дням недели')]].map(([m, n]) => `<button data-daymode="${m}" class="${(draft.someDays ? 'some' : 'every') === m ? 'on' : ''}">${n}</button>`).join('')}</div>
+    ${draft.someDays ? `<p class="cp" style="margin:10px 0 8px">${L('Tap the days to take it. Red border — today.', 'Отметьте дни приёма. Красная рамка — сегодня.')}</p>
+    <div class="chips c7">${(lang === 'ru' ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'] : ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']).map((d, k) => `<button data-day="${k}" class="${c.days[k] ? 'on' : ''}${k === dow(today()) ? ' today' : ''}" aria-pressed="${!!c.days[k]}">${d}</button>`).join('')}</div>` : ''}
+    ${!c.days[dow(today())] ? `<div class="warn" style="margin-top:10px"><b>${L(`Not today. First dose: ${nextDayName(c.days)}.`, `Сегодня не принимается. Первый приём: ${nextDayName(c.days)}.`)}</b></div>` : ''}
+    <div class="lab">${L('On the pillbox', 'На таблетнице')}</div>
+    <div class="devwrap">${devPreview(c, i)}<p class="devnote">${L('This is how the cell screen will look on the pillbox after you save.', 'Так экран ячейки будет выглядеть на таблетнице после сохранения.')}</p></div>
+    <div class="acts"><button class="btn pri" id="save" ${c.name.trim() && c.times.length ? '' : 'disabled'}>${L('Save to pillbox', 'Сохранить')}</button><button class="btn" id="cancel" style="flex:.6">${L('Cancel', 'Отмена')}</button></div>`;
+  if (!draft.isNew) h += `<div class="acts"><button class="btn soft" id="clearCell">${L('Empty this cell', 'Очистить ячейку')}</button></div>`;
+  h += `<div class="note" id="edNote">${!c.name.trim() ? L('Type a name to save.', 'Введите название, чтобы сохранить.') : !c.times.length ? L('Add at least one time.', 'Добавьте хотя бы одно время.') : ''}</div>`;
+  return h;
+}
+
+/* выбор времени: два колеса, как на iPhone */
+const ITEM = 48;
+const PRESETS = () => [['08:00', L('Morning', 'Утро')], ['13:00', L('Noon', 'День')], ['19:00', L('Evening', 'Вечер')], ['22:00', L('Night', 'Ночь')]];
+function vPicker() {
+  const col = (n, id) => `<div class="wheel" id="${id}" tabindex="0" aria-label="${id === 'wH' ? L('Hours', 'Часы') : L('Minutes', 'Минуты')}"><div class="pad"></div>${Array.from({ length: n }, (_, k) => `<div>${String(k).padStart(2, '0')}</div>`).join('')}<div class="pad"></div></div>`;
+  return `<div class="dim" id="pDim"></div><div class="sheet picker" role="dialog" aria-label="${L('Choose time', 'Выбор времени')}">
+    <div class="eyebrow">${picker.idx < 0 ? L('Add time', 'Новое время') : L('Change time', 'Изменить время')}</div>
+    <div class="presets">${PRESETS().map(p => `<button data-preset="${p[0]}">${p[1]}<small>${p[0]}</small></button>`).join('')}</div>
+    <div class="wheels" id="wheels"><div class="wbar"></div>${col(24, 'wH')}<div class="colon">:</div>${col(60, 'wM')}</div>
+    <div class="note err" id="pErr">${picker.err || ''}</div>
+    <div class="acts" style="margin-top:6px"><button class="btn" id="pCancel">${L('Cancel', 'Отмена')}</button><button class="btn pri" id="pOk">OK</button></div></div>`;
+}
+function setupWheels() {
+  [['wH', 'h'], ['wM', 'm']].forEach(([id, key]) => {
+    const el = document.getElementById(id); if (!el) return;
+    el.scrollTop = picker[key] * ITEM;
+    const mark = () => { const i = Math.round(el.scrollTop / ITEM); picker[key] = Math.max(0, Math.min(el.children.length - 3, i));
+      [...el.children].forEach((d, k) => d.classList.toggle('sel', k - 1 === picker[key])); };
+    mark();
+    el.addEventListener('scroll', () => requestAnimationFrame(mark), { passive: true });
+    let y0 = 0, s0 = 0, drag = false;                    // мышью на компьютере — тянуть
+    el.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; drag = true; y0 = e.clientY; s0 = el.scrollTop; el.style.scrollSnapType = 'none'; el.setPointerCapture(e.pointerId); });
+    el.addEventListener('pointermove', e => { if (drag) el.scrollTop = s0 - (e.clientY - y0); });
+    const up = () => { if (!drag) return; drag = false; el.style.scrollSnapType = ''; el.scrollTo({ top: Math.round(el.scrollTop / ITEM) * ITEM, behavior: 'smooth' }); };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('keydown', e => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); el.scrollTo({ top: (picker[key] + (e.key === 'ArrowDown' ? 1 : -1)) * ITEM, behavior: 'smooth' }); } });
+  });
+}
+function openPicker(idx) {
+  const c = draft.c;
+  let t = idx >= 0 ? c.times[idx] : null;
+  if (!t) {                                   // предлагаем свободное время: через 12 ч после последнего
+    let m = c.times.length ? toMin(c.times[c.times.length - 1]) + 12 * 60 : 8 * 60;
+    for (let k = 0; k < 24 && c.times.includes(hhmm(m)); k++) m += 60;
+    t = hhmm(m);
+  }
+  picker = { idx, h: +t.slice(0, 2), m: +t.slice(3), err: '' };
+}
+
+/* история: из журнала по дням */
+function hist() {
+  const days = [];
+  for (let k = 0; k < 7; k++) {
+    const d = new Date(today()); d.setDate(d.getDate() - k);
+    const e = log[dkey(d)];
+    if (e && e.length) days.push({ d, e, today: k === 0 });
+  }
+  return days;
+}
+const lateMin = x => x.s === 't' && x.at ? toMin(x.at) - toMin(x.t) : 0;
+function vHistory() {
+  const days = hist(), all = days.flatMap(x => x.e);
+  const onTime = all.filter(x => x.s === 't' && lateMin(x) <= 30).length, late = all.filter(x => x.s === 't' && lateMin(x) > 30).length, miss = all.filter(x => x.s === 'm').length;
+  const done = onTime + late + miss, pct = done ? Math.round(onTime * 100 / done) : 0;
+  let h = header() + `<div class="eyebrow">${L('History · last 7 days', 'История · 7 дней')}</div>`;
+  if (!done) return h + `<h2 class="ch">${L('Nothing<br>yet', 'Пока<br>пусто')}</h2><p class="cp">${L('Every dose will be listed here: taken, late or missed.', 'Здесь будет каждый приём: вовремя, позже или пропущен.')}</p>`;
+  h += `<div class="huge">${pct}<span style="font-size:.4em;letter-spacing:0">%</span></div>
+    <p class="cp" style="margin-top:6px;font-weight:700">${L(`of doses taken on time. ${onTime} of ${done}.`, `приёмов — вовремя. ${onTime} из ${done}.`)}</p>
+    <div class="stats"><div><b>${onTime}</b><span>${L('On time', 'Вовремя')}</span></div><div><b>${late}</b><span>${L('Late', 'Позже')}</span></div><div class="m"><b>${miss}</b><span>${L('Missed', 'Пропущено')}</span></div></div>
+    <div class="eyebrow" style="margin-top:22px">${L('By day', 'По дням')}</div><div class="card">`;
+  days.forEach(x => {
+    const k = dkey(x.d), m = x.e.filter(y => y.s === 'm').length, l = x.e.filter(y => lateMin(y) > 30).length, t = x.e.filter(y => y.s === 't').length;
+    const pill = m ? `<span class="pill m">${m} ${L('missed', ruPl(m, ['пропуск', 'пропуска', 'пропусков']))}</span>` : l ? `<span class="pill l">${l} ${L('late', 'позже')}</span>` : t ? `<span class="pill ok">${L('On time', 'Вовремя')}</span>` : '';
+    const open = openDay === k;
+    h += `<button class="dayrow" data-day-open="${k}" aria-expanded="${open}"><span class="dn"><b>${x.today ? L('Today', 'Сегодня') : WD()[dow(x.d)]}</b><small>${x.d.getDate()} ${MON()[x.d.getMonth()]} · ${L('taken', 'принято')} ${t} / ${x.e.length}</small></span>${pill}<span class="ar">${open ? '−' : '+'}</span></button>`;
+    if (open) h += `<div class="daydet">${x.e.map(y => {
+      const lm = lateMin(y);
+      const s = y.s === 't' ? `<span class="s${lm > 30 ? ' l' : ''}">${L('Taken', 'Принято')} ${y.at}${lm > 30 ? ` · +${lm} ${L('min', 'мин')}` : ''}</span>`
+        : y.s === 'm' ? `<span class="s m">${L('Missed', 'Пропущено')}</span>` : y.s === 'x' ? `<span class="s m">${L('No mark', 'Нет отметки')}</span>` : `<span class="s w">${L('Later', 'Позже')}</span>`;
+      return `<div class="dline"><span class="t">${y.t}</span><span class="n"><span class="cno">${y.cell + 1}</span><span>${esc(y.name)}</span></span>${s}</div>`; }).join('')}</div>`;
+  });
+  h += `</div><div class="eyebrow" style="margin-top:22px">${L('By medicine', 'По лекарствам')}</div><div class="card">`;
+  cells.forEach((c, i) => {
+    if (!c) return;
+    const e = all.filter(x => x.cell === i && x.s !== 'w' && x.s !== 'a' && x.s !== 's'), ok = e.filter(x => x.s === 't').length, m = e.length - ok;
+    h += `<div class="medrow"><span class="cno">${i + 1}</span><span style="min-width:0"><b>${esc(c.name)}</b><small>${doseText(c)} · ${c.times.join(', ')}</small></span>
+      <span class="v">${ok} / ${e.length}<small class="${m ? 'm' : ''}">${m ? m + ' ' + L('missed', ruPl(m, ['пропуск', 'пропуска', 'пропусков'])) : L('taken', 'принято')}</small></span></div>`;
+  });
+  return h + '</div>';
+}
+
+function vSettings() {
+  const seg = (id, vals, cur) => `<div class="chips c${vals.length}">${vals.map((v, k) => `<button data-set="${id}" data-v="${k}" class="${cur === k ? 'on' : ''}" aria-pressed="${cur === k}">${v}</button>`).join('')}</div>`;
+  const tog = (id, b, s) => `<button class="tog set" data-tog="${id}"><span><b>${b}</b>${s ? `<small>${s}</small>` : ''}</span><span class="sw${cfg[id] ? ' on' : ''}"><i></i></span></button>`;
+  const hasPerm = NATIVE ? AndroidPillbox.notifAllowed() : FRAME ? notifOn : (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+  const canAsk = NATIVE || FRAME || typeof Notification !== 'undefined';
+  let h = header() + `<div class="eyebrow">${L('Settings', 'Настройки')}</div><h2 class="ch">${L('Pillbox<br>and phone', 'Таблетница<br>и телефон')}</h2>
+    <div class="eyebrow" style="margin-top:20px">${L('Pillbox', 'Таблетница')}</div>
+    <div class="card"><div class="set flex"><div><div class="v">${esc(devName)}</div><div class="d">${linked ? L('Linked · firmware 0.3', 'На связи · прошивка 0.3') : L('Out of reach. The phone reminds you.', 'Вне связи. Напоминает телефон.')}</div></div>${BT(linked)}</div>
+      ${mode === 'live' && !linked ? `<div class="set"><button class="btn pri" id="reconnect3" style="margin:0">${L('Connect', 'Связать')}</button></div>` : ''}
+      <div class="set"><div class="k">${L('Language', 'Язык')}</div><div class="d">${L('For the app and the pillbox screen.', 'Для приложения и экрана таблетницы.')}</div>${seg('lang', ['English', 'Русский'], lang === 'ru' ? 1 : 0)}</div>
+      <div class="set"><div class="k">${L('Screen brightness', 'Яркость экрана')}</div>${seg('bright', [L('Low', 'Тусклый'), L('Medium', 'Средний'), L('High', 'Яркий')], cfg.bright)}</div>
+      ${tog('night', L('Night mode 22:00 – 07:00', 'Ночной режим 22:00 – 07:00'), L('A dim clock at night. Doses still ring.', 'Ночью тусклые часы. Приёмы всё равно звонят.'))}
+      ${tog('sound', L('Pillbox sound', 'Звук таблетницы'), '')}
+      <div class="set"><button class="btn" id="testRing" ${linked ? '' : 'disabled'} style="margin:0">${L('Test: ring the pillbox', 'Проверка: позвонить на таблетницу')}</button></div></div>
+    <div class="eyebrow" style="margin-top:20px">${L('Reminders on this phone', 'Напоминания на этом телефоне')}</div>
+    <p class="cp" style="margin:0 0 8px">${L('The pillbox always rings. The phone can remind you too, for when you are away from it.', 'Таблетница звонит всегда. Телефон может напомнить тоже — если вы не рядом с ней.')}</p>
+    <div class="card">
+      ${tog('phone', L('Ring on the phone at dose time', 'Звонить на телефоне во время приёма'), L('With Taken and Snooze buttons.', 'С кнопками «Принял» и «Отложить».'))}
+      ${tog('missed', L('Tell me about missed doses', 'Сообщать о пропущенных приёмах'), L('If no one presses Taken.', 'Если никто не нажал «Принял».'))}
+      ${tog('range', L('Warn when the pillbox is out of reach', 'Предупреждать, если таблетница вне связи'), '')}
+      <div class="set"><div class="perm"><b>${FRAME ? L('Android permission', 'Разрешение Android') : L('Notifications in this browser', 'Уведомления в этом браузере')}</b>${hasPerm ? `<span class="ok">${L('ALLOWED', 'РАЗРЕШЕНО')}</span>` : canAsk ? `<button class="btn" id="askPerm">${L('Allow', 'Разрешить')}</button>` : `<span class="muted">${L('not supported', 'нет')}</span>`}</div>
+        ${!hasPerm ? `<div class="d" style="margin-top:6px">${FRAME ? L('Without it the phone stays silent. Only the pillbox rings.', 'Без него телефон молчит, звонит только таблетница.') : L('Reminders still ring inside this page while it is open.', 'Пока страница открыта, напоминание всё равно зазвонит в ней.')}</div>` : ''}</div>
+    </div>`;
+  if (mode === 'demo' && PHONE) h += `<div class="eyebrow" style="margin-top:20px">${L('Demo', 'Демо')}</div><div class="card"><div class="set">
+      <button class="btn" data-sim="dose" style="margin:0 0 6px">${L('It’s 20:00 · dose time', '20:00 · время приёма')}</button>
+      <button class="btn" data-sim="boxTaken" style="margin:0 0 6px" ${demoRing() ? '' : 'disabled'}>${L('Taken on the pillbox', 'Нажали «Принял» на таблетнице')}</button>
+      <button class="btn" data-sim="noAnswer" style="margin:0 0 6px" ${demoRing() ? '' : 'disabled'}>${L('No answer · 3 rings', 'Никто не ответил · 3 звонка')}</button>
+      <button class="btn pri" id="leaveDemo" style="margin:0">${L('Connect a real pillbox', 'Подключить настоящую таблетницу')}</button></div></div>`;
+  h += `<div class="acts"><button class="btn soft" id="forget">${L('Forget this pillbox', 'Забыть таблетницу')}</button></div>
+    <div class="foot">Lolid Pillbox 0.2 · ${mode === 'live' ? L('connected mode', 'рабочий режим') : L('demo', 'демо')}</div>`;
+  return h;
+}
+
+function vAlarm() {
+  const [ci, t] = alarmKey.split('|'), c = cells[+ci];
+  return `<div class="alarm">${header(true)}
+    <div class="eyebrow" style="margin-top:18px">${L('Time to take', 'Пора принять')}</div>
+    <div class="huge">${t}</div>
+    <div class="who"><span class="sq">${+ci + 1}</span><b>${esc(c.name)}<small>${doseText(c)} · ${formName(c.form).toLowerCase()}</small></b></div>
+    <p class="ins">${esc(instr(c))}</p>
+    <div class="acts"><button class="btn w" id="aTaken">${L('Taken', 'Принял')}</button><button class="btn" id="aSnooze">${L('Snooze 10 min', 'Отложить на 10 мин')}</button></div>
+    <div class="note">${linked ? L('The pillbox is ringing too. Press Taken on either one.', 'Таблетница тоже звонит. Нажмите «Принял» на любой из них.') : L(`The pillbox is out of reach. Take it from cell ${+ci + 1}.`, `Таблетница вне связи. Возьмите из ячейки ${+ci + 1}.`)}</div></div>`;
+}
+
+function vSheet() {
+  const [ci, t] = sheetKey.split('|'), c = cells[+ci], s = st[sheetKey] || { s: toMin(t) < nowMin() ? 'x' : 'w' };
+  let body = '';
+  if (s.s === 'm' || s.s === 'x') body = `<p class="cp">${L(`Took it later? Hold the button. It records ${hhmm(nowMin())} and tells the pillbox.`, `Выпили позже? Удерживайте кнопку. Запишется ${hhmm(nowMin())}, таблетница тоже узнает.`)}</p>
+      <div class="acts"><button class="btn pri hold" id="holdTake"><i class="fill"></i><span>${L('Hold · taken now', 'Удерживайте · принял сейчас')}</span></button></div>`;
+  else if (s.s === 't') body = `<p class="cp">${L(`Taken at ${s.at}.`, `Принято в ${s.at}.`)} ${toMin(s.at) - toMin(t) > 30 ? L('Later than planned.', 'Позже, чем по расписанию.') : ''}</p>`;
+  else if (s.s === 'a') body = `<div class="acts"><button class="btn pri" id="openAlarm">${L('Open', 'Открыть')}</button></div>`;
+  else if (s.s === 's') body = `<p class="cp">${L(`Rings again at ${s.until}.`, `Позвонит снова в ${s.until}.`)}</p>`;
+  else body = `<p class="cp">${L(`The pillbox rings at ${t}.`, `Таблетница позвонит в ${t}.`)}</p>`;
+  return `<div class="dim" id="dim"></div><div class="sheet" role="dialog" aria-label="${esc(c.name)}">
+    <div class="eyebrow">${t} · ${L('cell', 'ячейка')} ${+ci + 1}</div><h2 class="ch">${esc(c.name)}</h2>
+    <p class="cp">${doseText(c)}. ${esc(instr(c))}</p>${body}
+    <div class="acts"><button class="btn soft" id="openCell">${L('Edit cell', 'Изменить ячейку')}</button><button class="btn" id="closeSheet">${L('Close', 'Закрыть')}</button></div></div>`;
+}
+
+/* =============================== СБОРКА =============================== */
+let lastViewKey = '';
+function render() {
+  const scr = $('#screen'), v0 = scr.querySelector('.view'), prevScroll = v0 ? v0.scrollTop : 0;
+  scr.classList.toggle('ru', lang === 'ru');
+  const redTop = splashOn || view === 'alarm';
+  if (NATIVE) setBar(view === 'alarm' ? '#ae1800' : '#f7eeea');
+  let h = '';
+  if (FRAME) {
+    const hasNotif = notifs.some(n => n.kind !== 'service');
+    h += `<div class="sbar${redTop ? ' inv' : ''}" id="sbar" role="button" tabindex="0" aria-label="${L('Open notifications', 'Открыть уведомления')}">
+      <span class="num">${hhmm(nowMin())}</span>${hasNotif ? `<svg width="12" height="12" viewBox="0 0 12 12"><circle cx="6" cy="6" r="6" fill="${redTop ? '#fff' : 'var(--red)'}"/></svg>` : ''}
+      <span class="sp"></span><span>5G</span><span>82%</span></div>`;
+  }
+  const tabsOn = onboarded && !draft && view !== 'alarm';
+  const body = !onboarded ? vOnboarding() : draft ? vEditor() : { today: vToday, cells: vCells, history: vHistory, settings: vSettings }[tab]();
+  h += `<div class="view${tabsOn ? '' : ' notabs'}" id="view">${body}</div>`;
+  if (tabsOn) {
+    const missed = todayDoses().filter(d => stOf(d).s === 'm').length;
+    h += `<nav class="tabs">${[['today', L('Today', 'Сегодня')], ['cells', L('Cells', 'Ячейки')], ['history', L('History', 'История')], ['settings', L('Settings', 'Настройки')]]
+      .map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-current="${tab === k}">${n}${k === 'today' && missed ? `<span class="badge">${missed}</span>` : ''}</button>`).join('')}</nav>`;
+  }
+  if (view === 'alarm' && alarmKey) h += vAlarm();
+  if (sheetKey) h += vSheet();
+  if (picker) h += vPicker();
+  if (toastMsg) h += `<div class="toast${tabsOn ? '' : ' nt'}" role="status">${esc(toastMsg)}</div>`;
+  if (FRAME && shade) h += `<div class="shade"><div class="qs"><b class="num">${hhmm(nowMin())}</b><span>${L('Sat, 26 Sep', 'сб, 26 сент.')}</span></div>
+      ${notifs.length ? notifs.map(notifHTML).join('') : `<div class="empty">${L('No notifications', 'Нет уведомлений')}</div>`}<button class="cl" id="closeShade">${L('Close', 'Закрыть')}</button></div>`;
+  if (mode === 'demo') h += `<div class="hu${huNotif && !shade ? ' show' : ''}">${huNotif ? notifHTML(huNotif) : ''}</div>`;
+  if (dlg) h += `<div class="dlg-dim"><div class="dlg" role="dialog"><div class="di">L</div><p>${L('Allow <b>Lolid</b> to send you notifications?', 'Разрешить приложению <b>Lolid</b> отправлять уведомления?')}</p>
+      <div class="db"><button id="allow">${L('Allow', 'Разрешить')}</button><button id="deny">${L('Don’t allow', 'Не разрешать')}</button></div></div></div>`;
+  if (FRAME) h += `<div class="gbar${redTop ? ' inv' : ''}"><i></i></div>`;
+  h += splashHTML();
+  scr.innerHTML = h;
+  const key = (onboarded ? '' : 'o') + (draft ? 'e' + draft.i : tab);
+  if (key === lastViewKey) $('#view').scrollTop = prevScroll;
+  lastViewKey = key;
+  if (picker) setupWheels();
+  const hb = document.getElementById('holdTake');
+  if (hb) hold(hb, () => { const k = sheetKey; sheetKey = null; markTaken(k, hhmm(nowMin())); });
+  if (splashOn) $('#splash').addEventListener('click', endSplash);
+  if (FRAME) renderPanel();
+}
+
+/* --------------------------- заставка --------------------------- */
+let splashT0 = 0, splashRaf = 0;
+function splashHTML() {
+  if (!splashOn) return '';
+  return `<div class="splash" id="splash" title="${L('Tap to skip', 'Нажмите, чтобы пропустить')}"><div class="sbox">
+    <div class="sq"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div>
+    <div class="logo">Lolid</div><div class="srule"></div>
+    <div class="sname">${L('Pillbox', 'Таблетница')}</div><div class="stag">${L('reminds you on time', 'напомнит вовремя')}</div></div></div>`;
+}
+/* Как на таблетнице: четыре квадрата-ячейки заливаются по кругу, под ними логотип. */
+const SPLASH_S = 3.4;
+function startSplash() { splashOn = true; splashT0 = performance.now(); render(); tickSplash(); clearTimeout(startSplash.tm); startSplash.tm = setTimeout(endSplash, (SPLASH_S + 0.6) * 1000); }
+function endSplash() { if (!splashOn) return; splashOn = false; cancelAnimationFrame(splashRaf); render(); }
+function tickSplash() {
+  if (!splashOn) return;
+  const t = (performance.now() - splashT0) / 1000, sp = document.getElementById('splash');
+  if (sp) {
+    const ORDER = [0, 1, 3, 2];
+    sp.querySelectorAll('.sq b').forEach((b, i) => {
+      const p = (((t - ORDER[i] * 0.3 + 2.4) % 2.4) + 2.4) % 2.4 / 2.4;
+      b.style.opacity = p < 0.10 ? 0 : p < 0.25 ? (p - 0.10) / 0.15 : p < 0.85 ? 1 : (1 - p) / 0.15;
+    });
+    if (t > SPLASH_S) sp.style.opacity = '0';
+  }
+  if (t < SPLASH_S + 0.5) splashRaf = requestAnimationFrame(tickSplash); else endSplash();
+}
+/* ----------------------------- панель (демо) ----------------------------- */
+function renderPanel() {
+  const ring = demoRing();
+  $('#panel').innerHTML = `
+    <div class="wm">Lolid</div>
+    <h2 class="ch">${L('Pillbox app<br>for Android', 'Приложение<br>для Android')}</h2>
+    <p class="cp">${L('A clickable sketch of the app. On a phone the same page connects to the real pillbox over Bluetooth.', 'Кликабельный эскиз приложения. На телефоне эта же страница подключается к настоящей таблетнице по Bluetooth.')}</p>
+    <div class="sec"><div class="lab" style="margin-top:0">${L('Language', 'Язык')}</div>
+      <div class="seg"><button data-plang="en" class="${lang === 'en' ? 'on' : ''}">EN</button><button data-plang="ru" class="${lang === 'ru' ? 'on' : ''}">RU</button></div></div>
+    <div class="sec"><div class="lab" style="margin-top:0">${L('What the pillbox does', 'Что делает таблетница')}<em class="num">${hhmm(nowMin())}</em></div>
+      <button class="btn pri" data-sim="dose">${L('It’s 20:00 · dose time', '20:00 · время приёма')}<small>${L('notification', 'уведомление')}</small></button>
+      <button class="btn" data-sim="boxTaken" ${ring ? '' : 'disabled'}>${L('Taken on the pillbox', 'Нажали «Принял» на таблетнице')}</button>
+      <button class="btn" data-sim="noAnswer" ${ring ? '' : 'disabled'}>${L('No answer · 3 rings', 'Никто не ответил · 3 звонка')}</button>
+      <button class="btn" data-sim="range">${linked ? L('Pillbox out of range', 'Таблетница вне связи') : L('Pillbox back in range', 'Таблетница снова на связи')}</button>
+      <button class="btn" data-sim="first">${L('First run', 'Первый запуск')}</button>
+      <button class="btn" data-sim="splash">${L('Replay splash', 'Показать заставку')}</button>
+      <button class="btn" data-sim="reset">${L('Reset demo', 'Сбросить демо')}</button>
+      <p class="cp" style="font-size:12px">${L('Tap the phone’s status bar to pull down the notification shade.', 'Нажмите на строку состояния телефона, чтобы открыть шторку уведомлений.')}</p></div>
+    <div class="sec"><div class="lab" style="margin-top:0">${L('App icon and name', 'Значок и имя')}</div>
+      <div class="iconrow"><span class="appicon"><i>Lolid</i>Lolid</span><span class="appicon sq"><i>Lolid</i>Lolid</span></div>
+      <p class="cp" style="font-size:12px">${L('Under the icon: Lolid. The full name Lolid Pillbox goes in the store and on the splash.', 'Под значком — Lolid. Полное имя Lolid Pillbox — в магазине и на заставке.')}</p></div>`;
+}
+
+/* ------------------------------ события ------------------------------ */
+function hold(el, done) {
+  let t0 = 0, raf = 0;
+  const fill = el.querySelector('.fill'), HOLD = 1500;
+  const stop = () => { cancelAnimationFrame(raf); t0 = 0; fill.style.width = '0'; };
+  const step = () => { const p = Math.min(1, (performance.now() - t0) / HOLD); fill.style.width = (p * 100) + '%'; if (p >= 1) { stop(); done(); } else raf = requestAnimationFrame(step); };
+  const start = e => { if (t0) return; e.preventDefault(); t0 = performance.now(); raf = requestAnimationFrame(step); };
+  el.addEventListener('pointerdown', start);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, stop));
+  el.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') start(e); });
+  el.addEventListener('keyup', stop);
+  el.addEventListener('contextmenu', e => e.preventDefault());
+}
+function openEditor(i) {
+  const c = cells[i];
+  draft = { i, isNew: !c, c: c ? JSON.parse(JSON.stringify(c)) : blankCell() };
+  draft.someDays = !draft.c.days.every(Boolean);
+}
+function fixMethod(c) {
+  if (!METHODS[c.form].includes(c.method)) c.method = METHODS[c.form][0];
+  const w = WATER_OPT(c.method);
+  if (w.length && !w.includes(c.water)) c.water = w.includes('full') ? 'full' : w[0];
+  if (c.form !== 'tablet' && c.amount % 1) c.amount = Math.ceil(c.amount);
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button,[data-nid],#sbar,#dim,#pDim');
+  if (!b) return;
+  const d = b.dataset, id = b.id;
+  if (d.plang) { lang = d.plang; render(); return; }
+  if (d.sim) { sim[d.sim](); render(); return; }
+  if (!$('#screen').contains(b)) return;
+
+  if (d.na) {                                   // кнопка в уведомлении (демо)
+    const n = notifs.find(x => x.id === d.nid) || huNotif; if (!n) return;
+    if (d.na === 'taken') markTaken(n.key, hhmm(nowMin()));
+    else if (d.na === 'snooze') snoozeNow(n.key);
+    else { shade = false; huNotif = null; tab = 'today'; draft = null; closeAlarm(); sheetKey = n.key; render(); }
+    return;
+  }
+  if (id === 'sbar') { shade = !shade; huNotif = null; render(); return; }
+  if (d.nid) {
+    const n = notifs.find(x => x.id === d.nid) || huNotif;
+    shade = false; huNotif = null;
+    if (n && (n.kind === 'dose' || n.kind === 'offline')) openAlarm(n.key);
+    else if (n && n.kind === 'missed') { tab = 'today'; draft = null; sheetKey = n.key; }
+    render(); return;
+  }
+  // --- выбор времени ---
+  if (picker) {
+    if (d.preset) {
+      const hEl = document.getElementById('wH'), mEl = document.getElementById('wM');
+      hEl.scrollTo({ top: +d.preset.slice(0, 2) * ITEM, behavior: 'smooth' }); mEl.scrollTo({ top: +d.preset.slice(3) * ITEM, behavior: 'smooth' });
+      return;
+    }
+    if (id === 'pOk') {
+      const t = hhmm(picker.h * 60 + picker.m), c = draft.c, dup = c.times.findIndex(x => x === t);
+      if (dup >= 0 && dup !== picker.idx) {
+        picker.err = L(`${t} is already in the list.`, `${t} уже есть в списке.`);
+        const e2 = $('#pErr'); e2.textContent = picker.err; const w = $('#wheels'); w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+        return;
+      }
+      if (picker.idx >= 0) c.times[picker.idx] = t; else c.times.push(t);
+      c.times.sort(); picker = null; render(); return;
+    }
+    if (id === 'pCancel' || id === 'pDim') { picker = null; render(); return; }
+    return;
+  }
+  if (id === 'closeShade') shade = false;
+  else if (id === 'connect') {
+    if (FRAME) scanStep = 1;
+    else { if (mode !== 'live') loadLive(); bleConnect(true); return; }
+  }
+  else if (id === 'tryDemo') { resetDemo(); toast(L('Demo. Nothing is connected.', 'Демо. Ничего не подключено.')); }
+  else if (id === 'leaveDemo') { loadLive(); onboarded = paired; if (NATIVE) nativeMerge(); }
+  else if (id === 'reconnect' || id === 'reconnect2' || id === 'reconnect3') { bleConnect(false); return; }
+  else if (id === 'pick') { scanStep = 2; render(); setTimeout(() => { linked = true; paired = true; scanStep = 0; notifs = [{ id: 'svc', kind: 'service' }]; dlg = 'notif'; render(); }, 1100); return; }
+  else if (id === 'allow' || id === 'deny') { notifOn = id === 'allow'; dlg = null; onboarded = true; tab = 'today'; toast(notifOn ? L('Linked. Schedule sent to the pillbox.', 'Связь есть. Расписание отправлено на таблетницу.') : L('Linked. Phone notifications are blocked.', 'Связь есть. Уведомления на телефоне запрещены.')); }
+  else if (id === 'fixN' || id === 'askPerm') {
+    if (NATIVE) { AndroidPillbox.askNotif(); return; }
+    if (FRAME) dlg = 'notif';
+    else if (typeof Notification !== 'undefined') { Notification.requestPermission().then(render); return; }
+  }
+  else if (d.tab) { tab = d.tab; sheetKey = null; }
+  else if (d.dayOpen) openDay = openDay === d.dayOpen ? null : d.dayOpen;
+  else if (d.key) sheetKey = d.key;
+  else if (id === 'nextBand') { const nx = nextDose(); if (nx && stOf(nx).s === 'a') openAlarm(nx.k); else if (nx) sheetKey = nx.k; }
+  else if (id === 'dim' || id === 'closeSheet') sheetKey = null;
+  else if (id === 'openAlarm') { const k = sheetKey; sheetKey = null; openAlarm(k); }
+  else if (id === 'openCell') { const i = +sheetKey.split('|')[0]; sheetKey = null; openEditor(i); }
+  else if (d.cell) openEditor(+d.cell);
+  else if (id === 'aTaken') { markTaken(alarmKey, hhmm(nowMin())); return; }
+  else if (id === 'aSnooze') { snoozeNow(alarmKey); return; }
+  else if (d.form) { draft.c.form = d.form; fixMethod(draft.c); }
+  else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' ? 0.5 : 1; c.amount = Math.max(stp, Math.min(60, c.amount + stp * +d.amt)); }
+  else if (d.method) { draft.c.method = d.method; fixMethod(draft.c); }
+  else if (d.water) draft.c.water = d.water;
+  else if (d.food) draft.c.food = d.food;
+  else if (d.before) draft.c.before = +d.before;
+  else if (d.flag) draft.c.flags[d.flag] = draft.c.flags[d.flag] ? 0 : 1;
+  else if (d.deltime) draft.c.times.splice(+d.deltime, 1);
+  else if (d.edittime) openPicker(+d.edittime);
+  else if (id === 'addTime') openPicker(-1);
+  else if (d.daymode) {
+    draft.someDays = d.daymode === 'some';
+    draft.c.days = draft.someDays ? [0, 0, 0, 0, 0, 0, 0].map((x, k) => k === dow(today()) ? 1 : 0) : [1, 1, 1, 1, 1, 1, 1];
+  }
+  else if (d.day) { draft.c.days[+d.day] = draft.c.days[+d.day] ? 0 : 1; if (!draft.c.days.some(Boolean)) draft.c.days[+d.day] = 1; }
+  else if (id === 'save') {
+    const i = draft.i, c = draft.c;
+    cells[i] = c;
+    Object.keys(st).forEach(k => { if (+k.split('|')[0] === i && !c.times.includes(k.split('|')[1])) delete st[k]; });
+    draft = null; tab = 'cells';
+    bleSend(cellLine(c, i));
+    toast(linked ? L(`Cell ${i + 1} sent to the pillbox.`, `Ячейка ${i + 1} отправлена на таблетницу.`) : L(`Cell ${i + 1} saved. It goes to the pillbox when connected.`, `Ячейка ${i + 1} сохранена. Уйдёт на таблетницу, когда будет связь.`));
+    changed(true); return;
+  }
+  else if (id === 'cancel') draft = null;
+  else if (id === 'clearCell') {
+    const i = draft.i; cells[i] = null; Object.keys(st).forEach(k => { if (+k.split('|')[0] === i) delete st[k]; });
+    draft = null; bleSend(`CLEAR|${i + 1}`); toast(L(`Cell ${i + 1} emptied.`, `Ячейка ${i + 1} очищена.`)); changed(true); return;
+  }
+  else if (id === 'fillExamples') { cells = demoCells(); syncAll(); changed(false); return; }
+  else if (d.set) {
+    const v = +d.v;
+    if (d.set === 'lang') { lang = v ? 'ru' : 'en'; syncAll(); }
+    if (d.set === 'bright') { cfg.bright = v; bleSend(`CFG|bright|${v}`); }
+    save();
+  }
+  else if (d.tog) {
+    cfg[d.tog] = !cfg[d.tog];
+    if (d.tog === 'night') bleSend(`CFG|night|${cfg.night ? '22-7' : 'off'}`);
+    if (d.tog === 'sound') bleSend(`CFG|sound|${cfg.sound ? 1 : 0}`);
+    if (d.tog === 'phone' && cfg.phone && mode === 'live' && typeof Notification !== 'undefined' && Notification.permission === 'default') Notification.requestPermission().then(render);
+    save();
+  }
+  else if (id === 'testRing') { bleSend('TEST'); toast(L('The pillbox rings once. Nothing is marked.', 'Таблетница звонит один раз. Ничего не отмечается.')); }
+  else if (id === 'forget') {
+    if (NATIVE && mode === 'live') { AndroidPillbox.forget(); linked = false; paired = false; onboarded = false; save(); }
+    else if (mode === 'live') { try { bleDev && bleDev.gatt.connected && bleDev.gatt.disconnect(); } catch (e2) { } bleDev = null; rxCh = null; linked = false; paired = false; onboarded = false; save(); }
+    else sim.first();
+  }
+  else return;
+  render();
+});
+
+document.addEventListener('input', e => {
+  if (!draft) return;
+  if (e.target.id === 'fName') {
+    draft.c.name = e.target.value;
+    const s = $('#save'); if (s) s.disabled = !(draft.c.name.trim() && draft.c.times.length);
+    const nm = document.querySelector('.devs .nm'); if (nm) nm.textContent = draft.c.name || L('Name', 'Название');
+    const t = $('#edTitle'); if (t) t.textContent = draft.c.name || L('New medicine', 'Новое лекарство');
+    const n = $('#edNote'); if (n) n.textContent = !draft.c.name.trim() ? L('Type a name to save.', 'Введите название, чтобы сохранить.') : '';
+  }
+  if (e.target.id === 'fNote') {
+    if (lang === 'ru') draft.c.noteRu = e.target.value; else { draft.c.note = e.target.value; delete draft.c.noteRu; }
+    const b = document.querySelector('.devs .body span'); if (b) b.textContent = instr(draft.c);
+  }
+});
+
+/* телефон целиком на узком окне компьютера */
+function fit() {
+  if (PHONE) return;
+  const w = Math.min(380, document.documentElement.clientWidth - 32), k = w / 380;
+  $('#phone').style.transform = k < 1 ? `scale(${k})` : '';
+  $('#holder').style.width = w + 'px';
+  $('#holder').style.height = (800 * k) + 'px';
+}
+addEventListener('resize', fit);
+
+/* старт: на компьютере — демо; на телефоне — настоящий режим (или первый запуск) */
+/* ---------------- мост Android: эти функции вызывает приложение ---------------- */
+const NOTES = {
+  BT_OFF: ['Turn Bluetooth on, then tap connect.', 'Включите Bluetooth и нажмите «Связать».'],
+  NOT_FOUND: ['No pillbox found. Plug it in, keep it close and try again.', 'Таблетница не найдена. Включите её, поднесите ближе и попробуйте снова.'],
+  SCAN_FAIL: ['Bluetooth search failed. Try again.', 'Поиск Bluetooth не удался. Попробуйте снова.'],
+  NO_SERVICE: ['This device is not a Lolid pillbox.', 'Это устройство — не таблетница Lolid.'],
+  PERM: ['Bluetooth permission refused. Allow it in Android settings to connect.', 'Нет разрешения на Bluetooth. Разрешите его в настройках Android.']
+};
+window.nativeState = (s, name) => {
+  const was = linked;
+  linked = s === 'LINKED';
+  scanStep = s === 'SCANNING' ? 1 : s === 'LINKING' ? 2 : 0;
+  if (name) devName = name;
+  if (linked) {
+    errNote = '';
+    if (!paired || !onboarded) { paired = true; onboarded = true; tab = cells.some(Boolean) ? 'today' : 'cells'; }
+    if (!was) { syncAll(); toast(L('Linked. Schedule sent to the pillbox.', 'Связь есть. Расписание отправлено на таблетницу.')); }
+  }
+  save(); render();
+};
+window.nativeNote = code => { const n = NOTES[code]; errNote = n ? L(n[0], n[1]) : code; if (onboarded) toast(errNote); render(); };
+window.nativeEvent = line => { if (mode === 'live') onEvent(line); };
+window.nativeOpenAlarm = key => {
+  if (mode !== 'live' || !cells[+key.split('|')[0]]) return;
+  if (!st[key] || st[key].s !== 'a') st[key] = { s: 'a', since: nowMin() };
+  openAlarm(key); render();
+};
+window.nativeOpenSheet = key => { if (mode !== 'live') return; draft = null; picker = null; tab = 'today'; sheetKey = key; render(); };
+window.nativeBack = () => {
+  if (splashOn) endSplash();
+  else if (picker) picker = null;
+  else if (sheetKey) sheetKey = null;
+  else if (draft) draft = null;
+  else if (view === 'alarm') return true;
+  else if (onboarded && tab !== 'today') tab = 'today';
+  else return false;
+  render(); return true;
+};
+window.nativeResume = () => { if (NATIVE && mode === 'live') { nativeMerge(); if (!draft && !picker) render(); } };
+let lastBar = '';
+function setBar(c) { if (NATIVE && c !== lastBar) { lastBar = c; try { AndroidPillbox.bar(c); } catch (e) { } } }
+
+if (PHONE) { loadLive(); if (NATIVE) nativeMerge(); } else resetDemo();
+fit();
+startSplash();
+</script>
