@@ -431,7 +431,12 @@ function unit(f, n) {
   const u = { tablet: 'tablet', capsule: 'capsule', powder: 'sachet', drops: 'drop' }[f];
   return n > 1 ? u + 's' : u;
 }
-const doseText = c => `${fmtAmt(c.amount)} ${unit(c.form, c.amount)}`;
+/* порошок можно дозировать пакетиками или граммами (например, магний 2,5 г) */
+const isG = c => c.form === 'powder' && !!c.grams;
+const fmtG = a => lang === 'ru' ? String(a).replace('.', ',') : String(a);
+const amtText = c => isG(c) ? fmtG(c.amount) : fmtAmt(c.amount);
+const unitOf = c => isG(c) ? L('g', 'г') : unit(c.form, c.amount);
+const doseText = c => `${amtText(c)} ${unitOf(c)}`;
 
 /* Способы приёма зависят от формы */
 const METHODS = { tablet: ['swallow', 'chew', 'tongue', 'dissolve'], capsule: ['swallow', 'open'], powder: ['stir', 'mixfood', 'tongue'], drops: ['spoon', 'glass', 'tongue', 'eyes', 'nose', 'ears'] };
@@ -630,7 +635,7 @@ function bleSend(line) {
     }
   }).catch(e => console.warn('BLE write', e));
 }
-const devDose = c => clip(`${fmtAmt(c.amount)} ${unit(c.form, c.amount)}`, 46);
+const devDose = c => clip(doseText(c), 46);
 const cellLine = (c, i) => `CELL|${i + 1}|${c.form}|FFFFFF|${clip(c.name, 70)}|${devDose(c)}|${clip(instr(c), 250)}`;
 function dayLine() {
   return 'DAY|' + todayDoses().slice(0, 16).map(d => {
@@ -985,7 +990,8 @@ function vEditor() {
     <div class="lab"><label for="fName">${L('Name', 'Название')}</label></div>
     <input class="inp big" id="fName" maxlength="40" autocomplete="off" value="${esc(c.name)}" placeholder="${L('e.g. Aspirin Cardio', 'Например, Аспирин Кардио')}">
     <div class="lab">${L('Dose', 'Доза')}<em>${L('each time', 'за один приём')}</em></div>
-    <div class="step"><button data-amt="-1" aria-label="${L('Less', 'Меньше')}">−</button><output id="amt">${fmtAmt(c.amount)}</output><button data-amt="1" aria-label="${L('More', 'Больше')}">+</button><span class="unit">${unit(c.form, c.amount)}</span></div>
+    ${c.form === 'powder' ? `<div class="chips" style="margin-bottom:8px">${[['0', L('Sachets', 'Пакетики')], ['1', L('Grams', 'Граммы')]].map(([v, n]) => `<button data-gunit="${v}" class="${(isG(c) ? '1' : '0') === v ? 'on' : ''}" aria-pressed="${(isG(c) ? '1' : '0') === v}">${n}</button>`).join('')}</div>` : ''}
+    <div class="step"><button data-amt="-1" aria-label="${L('Less', 'Меньше')}">−</button><output id="amt">${amtText(c)}</output><button data-amt="1" aria-label="${L('More', 'Больше')}">+</button><span class="unit">${unitOf(c)}</span></div>
     <div class="lab">${L('How to take', 'Как принимать')}<em>${formName(c.form).toLowerCase()}</em></div>
     <div class="chips">${METHODS[c.form].map(m => `<button data-method="${m}" class="${c.method === m ? 'on' : ''}" aria-pressed="${c.method === m}">${methodName(m)}</button>`).join('')}</div>`;
   if (wopt.length) h += `<div class="lab">${L('Water', 'Вода')}</div><div class="chips ${wopt.length === 3 ? 'c3' : ''}">${wopt.map(w => `<button data-water="${w}" class="${c.water === w ? 'on' : ''}" aria-pressed="${c.water === w}">${waterName(w)}</button>`).join('')}</div>`;
@@ -1267,7 +1273,8 @@ function fixMethod(c) {
   if (!METHODS[c.form].includes(c.method)) c.method = METHODS[c.form][0];
   const w = WATER_OPT(c.method);
   if (w.length && !w.includes(c.water)) c.water = w.includes('full') ? 'full' : w[0];
-  if (c.form !== 'tablet' && c.amount % 1) c.amount = Math.ceil(c.amount);
+  if (c.form !== 'powder') c.grams = false;
+  if (c.form !== 'tablet' && !isG(c) && c.amount % 1) c.amount = Math.ceil(c.amount);
 }
 
 document.addEventListener('click', e => {
@@ -1339,7 +1346,8 @@ document.addEventListener('click', e => {
   else if (id === 'aTaken') { markTaken(alarmKey, hhmm(nowMin())); return; }
   else if (id === 'aSnooze') { snoozeNow(alarmKey); return; }
   else if (d.form) { draft.c.form = d.form; fixMethod(draft.c); }
-  else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' ? 0.5 : 1; c.amount = Math.max(stp, Math.min(60, c.amount + stp * +d.amt)); }
+  else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' || isG(c) ? 0.5 : 1; c.amount = Math.max(stp, Math.min(60, c.amount + stp * +d.amt)); }
+  else if (d.gunit) { draft.c.grams = d.gunit === '1'; draft.c.amount = draft.c.grams ? 2.5 : 1; }
   else if (d.method) { draft.c.method = d.method; fixMethod(draft.c); }
   else if (d.water) draft.c.water = d.water;
   else if (d.food) draft.c.food = d.food;
