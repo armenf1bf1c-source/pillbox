@@ -298,19 +298,20 @@ textarea.inp{font-size:13px;line-height:1.45;resize:none;min-height:60px}
 .tabs .badge{display:inline-block;min-width:16px;height:16px;line-height:16px;margin-left:4px;border-radius:8px;background:#fff;color:var(--red-deep);font-size:10px;letter-spacing:0}
 
 /* тревога */
-.alarm{position:absolute;inset:0;z-index:25;background:var(--red-deep);color:#fff;padding:40px 18px 30px;display:flex;flex-direction:column}
-.alarm .brand,.alarm .state,.alarm .eyebrow{color:#fff}
+.alarm{position:absolute;inset:0;z-index:25;background:var(--ink);color:#fff;padding:40px 18px 30px;display:flex;flex-direction:column}
+.alarm .brand,.alarm .state{color:#fff}
+.alarm .eyebrow{color:var(--red)}
 .alarm .rule{background:#fff}
 .alarm .who{display:flex;align-items:center;gap:12px;margin-top:16px}
-.alarm .who .sq{width:56px;height:56px;border-radius:var(--r);background:#fff;color:var(--red-deep);display:grid;place-items:center;font-size:38px;font-weight:800;flex:none}
+.alarm .who .sq{width:56px;height:56px;border-radius:var(--r);background:#fff;color:var(--ink);display:grid;place-items:center;font-size:38px;font-weight:800;flex:none}
 .alarm .who b{font-size:24px;font-weight:800;line-height:1.05;text-transform:uppercase}
 .alarm .who small{display:block;font-size:13px;font-weight:700;margin-top:3px;text-transform:none}
 .alarm .ins{font-size:15px;line-height:1.45;margin-top:14px;max-width:30ch}
 .alarm .acts{margin-top:auto;flex-direction:column}
 .alarm .btn{border-color:#fff;color:#fff;min-height:58px}
-.alarm .btn.w{background:#fff;color:var(--red-deep);font-size:13px}
-.alarm .btn:active{background:#fff;color:var(--red-deep)}
-.alarm .btn.w:active{background:var(--red-press);color:#fff}
+.alarm .btn.w{background:var(--red);border-color:var(--red);color:#fff;font-size:13px}
+.alarm .btn:active{background:#fff;color:var(--ink)}
+.alarm .btn.w:active{background:var(--red-press);border-color:var(--red-press);color:#fff}
 .alarm .note{color:#fff;opacity:.85}
 
 /* лист снизу */
@@ -1156,7 +1157,7 @@ function render() {
   const scr = $('#screen'), v0 = scr.querySelector('.view'), prevScroll = v0 ? v0.scrollTop : 0;
   scr.classList.toggle('ru', lang === 'ru');
   const redTop = splashOn || view === 'alarm';
-  if (NATIVE) setBar(view === 'alarm' ? '#ae1800' : '#f7eeea');
+  if (NATIVE) setBar(view === 'alarm' ? '#201e1d' : '#f7eeea');
   let h = '';
   if (FRAME) {
     const hasNotif = notifs.some(n => n.kind !== 'service');
