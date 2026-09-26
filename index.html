@@ -1297,6 +1297,7 @@ function hold(el, done) {
 function openEditor(i) {
   const c = cells[i];
   draft = { i, isNew: !c, c: c ? JSON.parse(JSON.stringify(c)) : blankCell() };
+  draft.orig = JSON.stringify(draft.c);
   draft.someDays = !draft.c.days.every(Boolean);
 }
 function fixMethod(c) {
@@ -1498,16 +1499,38 @@ window.nativeOpenAlarm = key => {
   openAlarm(key); render();
 };
 window.nativeOpenSheet = key => { if (mode !== 'live') return; draft = null; picker = null; tab = 'today'; sheetKey = key; render(); };
-window.nativeBack = () => {
+/* «Назад»: системная кнопка/жест Android и свайп вправо на любом телефоне. Возвращает false, если закрывать нечего. */
+function goBack() {
   if (splashOn) endSplash();
+  else if (view === 'alarm') return true;           // тревогу смахнуть нельзя — только «Принял» или «Отложить»
   else if (picker) picker = null;
   else if (sheetKey) sheetKey = null;
-  else if (draft) draft = null;
-  else if (view === 'alarm') return true;
+  else if (draft) {
+    if (JSON.stringify(draft.c) !== draft.orig) toast(L('Changes not saved.', 'Изменения не сохранены.'));
+    draft = null;
+  }
   else if (onboarded && tab !== 'today') tab = 'today';
   else return false;
   render(); return true;
-};
+}
+window.nativeBack = goBack;
+
+/* свайп вправо (палец ведёт слева направо) = назад, как на iPhone и Android */
+(function swipeBack() {
+  const scr = document.getElementById('screen');
+  let x0 = 0, y0 = 0, t0 = 0, on = false;
+  scr.addEventListener('touchstart', e => {
+    const t = e.touches[0], el = e.target;
+    on = e.touches.length === 1 && !el.closest('.wheel,input,textarea,.hold');
+    x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+  }, { passive: true });
+  scr.addEventListener('touchend', e => {
+    if (!on) return; on = false;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    if (dx > 70 && Math.abs(dy) < Math.max(40, dx * 0.5) && Date.now() - t0 < 800) goBack();
+  }, { passive: true });
+  scr.addEventListener('touchcancel', () => { on = false; }, { passive: true });
+})();
 window.nativeResume = () => { if (NATIVE && mode === 'live') { nativeMerge(); if (!draft && !picker) render(); } };
 let lastBar = '';
 function setBar(c) { if (NATIVE && c !== lastBar) { lastBar = c; try { AndroidPillbox.bar(c); } catch (e) { } } }
