@@ -319,6 +319,12 @@ textarea.inp{font-size:13px;line-height:1.45;resize:none;min-height:60px}
 .alarm .who b{font-size:24px;font-weight:800;line-height:1.05;text-transform:uppercase}
 .alarm .who small{display:block;font-size:13px;font-weight:700;margin-top:3px;text-transform:none}
 .alarm .ins{font-size:15px;line-height:1.45;margin-top:14px;max-width:30ch}
+.alarm .huge.sm{font-size:72px}
+.alarm .group{margin-top:6px;overflow-y:auto}
+.alarm .group .who{margin-top:10px}
+.alarm .group .who .sq{width:42px;height:42px;font-size:26px;border-radius:12px}
+.alarm .group .who b{font-size:17px}
+.alarm .group .who small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;opacity:.85}
 .alarm .acts{margin-top:auto;flex-direction:column}
 .alarm .btn{border-color:#fff;color:#fff;min-height:58px}
 .alarm .btn.w{background:var(--red);border-color:var(--red);color:#fff;font-size:13px}
@@ -661,7 +667,29 @@ function syncAll() {
   bleSend(`CFG|night|${cfg.night ? '22-7' : 'off'}`);
   bleSend(`CFG|sound|${cfg.sound ? 1 : 0}`);
   cells.forEach((c, i) => bleSend(c ? cellLine(c, i) : `CLEAR|${i + 1}`));
-  bleSend(dayLine());
+  // сначала забираем отметки таблетницы (например, «Принял», пока телефона не было рядом), объединяем
+  // со своими и только потом отправляем общее расписание — иначе телефон затёр бы её отметки
+  bleSend('GETDAY');
+  clearTimeout(syncAll.tm);
+  syncAll.tm = setTimeout(() => bleSend(dayLine()), 3000);   // старая прошивка без GETDAY — просто шлём своё
+}
+/* отметки таблетницы: «принято» важнее «пропущено», то — важнее «отложено», «звонит», «ждёт» */
+const RANK = { w: 0, x: 0, a: 1, s: 2, m: 3, t: 4 };
+function mergeDayStat(payload) {
+  if (!payload || payload === '-') return false;
+  let changedAny = false;
+  const today = new Set(todayDoses().map(d => d.k));
+  payload.split(';').forEach(item => {
+    const p = item.split(','); if (p.length < 3) return;
+    const key = (+p[1] - 1) + '|' + p[0];
+    if (!today.has(key)) return;
+    const code = p[2].split('@')[0], at = p[2].split('@')[1] || '';
+    const cur = st[key] ? st[key].s : 'w';
+    if ((RANK[code] || 0) <= (RANK[cur] || 0)) return;
+    st[key] = code === 't' ? { s: 't', at: at || hhmm(nowMin()) } : code === 's' ? { s: 's', until: hhmm(nowMin() + 10) } : code === 'a' ? { s: 'a', since: nowMin() } : { s: code };
+    changedAny = true;
+  });
+  return changedAny;
 }
 async function bleConnect(fresh) {
   errNote = '';
@@ -704,20 +732,28 @@ function onBleData(chunk) {
 }
 function onEvent(line) {
   const f = line.split('|'), k = f[0];
+  if (k === 'DAYSTAT') {   // отметки таблетницы при подключении
+    clearTimeout(syncAll.tm);
+    const got = mergeDayStat(line.slice(8));
+    if (got) toast(L('Marks from the pillbox added.', 'Отметки с таблетницы получены.'));
+    refreshAlarm();
+    changed(true);          // общее расписание — обратно на таблетницу
+    return;
+  }
   if (!['TAKEN', 'SNOOZE', 'MISSED', 'ALARM'].includes(k)) return;
   const cell = +f[1] - 1, t = f[2], key = cell + '|' + t, c = cells[cell];
   if (!c) return;
   if (k === 'TAKEN') {
     const at = +f[3] ? hhmmD(new Date(+f[3] * 1000)) : hhmm(nowMin());
     st[key] = { s: 't', at };
-    if (alarmKey === key) closeAlarm();
+    refreshAlarm();
     toast(L(`${c.name}: taken at ${at}.`, `${c.name}: принято в ${at}.`));
   } else if (k === 'SNOOZE') {
     st[key] = { s: 's', until: hhmm(nowMin() + (+f[3] || 10)) };
-    if (alarmKey === key) closeAlarm();
+    refreshAlarm();
   } else if (k === 'MISSED') {
     st[key] = { s: 'm' };
-    if (alarmKey === key) closeAlarm();
+    refreshAlarm();
     if (cfg.missed) phoneNotify(L(`Missed: ${c.name} at ${t}`, `Пропущено: ${c.name} в ${t}`), L('Took it later? Open the app and mark it.', 'Выпили позже? Отметьте в приложении.'));
   } else if (k === 'ALARM') {
     if (!st[key] || st[key].s !== 'a') { st[key] = { s: 'a', since: nowMin() }; openAlarm(key); }
@@ -756,6 +792,18 @@ function openAlarm(key) {
   }
 }
 function closeAlarm() { view = null; alarmKey = null; clearInterval(beepTm); }
+/* все приёмы, которые звонят в то же время, что и открытая тревога — одна общая тревога */
+function alarmGroup() {
+  if (!alarmKey) return [];
+  const t = alarmKey.split('|')[1];
+  return todayDoses().filter(d => d.t === t && stOf(d).s === 'a').map(d => d.k);
+}
+/* после отметки одного из группы: остались звонящие — показываем их, нет — закрываем тревогу */
+function refreshAlarm() {
+  if (view !== 'alarm') return;
+  const g = alarmGroup();
+  if (g.length) alarmKey = g[0]; else closeAlarm();
+}
 
 /* каждые 15 с в настоящем режиме: пора ли звонить */
 let lastTickMin = -1;
@@ -775,7 +823,7 @@ function tick(force) {
     const s = st[d.k], tm = toMin(d.t);
     if (!s && tm <= now && now - tm <= 2) startDose(d.k);                                        // время пришло
     else if (s && s.s === 's' && toMin(s.until) <= now && !linked) startDose(d.k);              // отложенный (без таблетницы)
-    else if (s && s.s === 'a' && !linked && now - (s.since ?? now) >= 30) { st[d.k] = { s: 'm' }; if (alarmKey === d.k) closeAlarm(); changed(false); }
+    else if (s && s.s === 'a' && !linked && now - (s.since ?? now) >= 30) { st[d.k] = { s: 'm' }; refreshAlarm(); changed(false); }
   });
   if (force || now !== lastTickMin) { lastTickMin = now; if (!draft && !picker && !sheetKey) render(); }
 }
@@ -791,22 +839,27 @@ function startDose(key) {
 /* ------------------------------ действия ------------------------------ */
 let toastMsg = '', toastTm;
 function toast(m) { toastMsg = m; clearTimeout(toastTm); toastTm = setTimeout(() => { toastMsg = ''; render(); }, 3000); }
-function markTaken(key, at) {
-  st[key] = { s: 't', at };
-  const [ci] = key.split('|'), c = cells[+ci];
-  dropNotif('dose'); dropNotif('off'); dropNotif('miss' + key);
-  if (alarmKey === key) closeAlarm();
-  bleSend(`STOP|${+ci + 1}`);
-  toast(linked ? L(`${c.name}: taken at ${at}. The pillbox knows.`, `${c.name}: принято в ${at}. Таблетница в курсе.`)
-               : L(`${c.name}: taken at ${at}. The pillbox learns when it’s back.`, `${c.name}: принято в ${at}. Таблетница узнает, когда вернётся связь.`));
+function markTaken(key, at) { markTakenAll([key], at); }
+/* «Принял» сразу по нескольким приёмам (одна тревога на всё, что в одно время) */
+function markTakenAll(keys, at) {
+  keys.forEach(key => {
+    st[key] = { s: 't', at };
+    dropNotif('miss' + key);
+    bleSend(`STOP|${+key.split('|')[0] + 1}`);
+  });
+  dropNotif('dose'); dropNotif('off');
+  refreshAlarm();
+  const what = keys.length > 1 ? L(`${keys.length} medicines`, `Лекарства (${keys.length})`) : cells[+keys[0].split('|')[0]].name;
+  toast(linked ? L(`${what}: taken at ${at}. The pillbox knows.`, `${what}: принято в ${at}. Таблетница в курсе.`)
+               : L(`${what}: taken at ${at}. The pillbox learns when it’s back.`, `${what}: принято в ${at}. Таблетница узнает, когда вернётся связь.`));
   changed(true);
 }
-function snoozeNow(key) {
+function snoozeNow(key) { snoozeAll([key]); }
+function snoozeAll(keys) {
   const until = hhmm(nowMin() + 10);
-  st[key] = { s: 's', until };
+  keys.forEach(key => { st[key] = { s: 's', until }; bleSend(`SNOOZE|${+key.split('|')[0] + 1}`); });
   dropNotif('dose'); dropNotif('off');
-  if (alarmKey === key) closeAlarm();
-  bleSend(`SNOOZE|${+key.split('|')[0] + 1}`);
+  refreshAlarm();
   toast(L(`Reminder again at ${until}`, `Напомню снова в ${until}`));
   changed(false);
 }
@@ -1199,12 +1252,17 @@ function diagBlock() {
 
 function vAlarm() {
   const [ci, t] = alarmKey.split('|'), c = cells[+ci];
+  const g = alarmGroup(), many = g.length > 1;
+  const who = many
+    ? `<div class="group">${g.map(k => { const i = +k.split('|')[0], x = cells[i];
+        return `<div class="who"><span class="sq">${i + 1}</span><b>${esc(x.name)}<small>${doseText(x)} · ${esc(instr(x))}</small></b></div>`; }).join('')}</div>`
+    : `<div class="who"><span class="sq">${+ci + 1}</span><b>${esc(c.name)}<small>${doseText(c)} · ${formName(c.form).toLowerCase()}</small></b></div>
+       <p class="ins">${esc(instr(c))}</p>`;
   return `<div class="alarm">${header(true)}
-    <div class="eyebrow" style="margin-top:18px">${L('Time to take', 'Пора принять')}</div>
-    <div class="huge">${t}</div>
-    <div class="who"><span class="sq">${+ci + 1}</span><b>${esc(c.name)}<small>${doseText(c)} · ${formName(c.form).toLowerCase()}</small></b></div>
-    <p class="ins">${esc(instr(c))}</p>
-    <div class="acts"><button class="btn w" id="aTaken">${L('Taken', 'Принял')}</button><button class="btn" id="aSnooze">${L('Snooze 10 min', 'Отложить на 10 мин')}</button></div>
+    <div class="eyebrow" style="margin-top:18px">${L('Time to take', 'Пора принять')}${many ? ' · ' + g.length : ''}</div>
+    <div class="huge${many ? ' sm' : ''}">${t}</div>
+    ${who}
+    <div class="acts"><button class="btn w" id="aTaken">${many ? L('Taken all', 'Принял всё') : L('Taken', 'Принял')}</button><button class="btn" id="aSnooze">${L('Snooze 10 min', 'Отложить на 10 мин')}</button></div>
     <div class="note">${linked ? L('The pillbox is ringing too. Press Taken on either one.', 'Таблетница тоже звонит. Нажмите «Принял» на любой из них.') : L(`The pillbox is out of reach. Take it from cell ${+ci + 1}.`, `Таблетница вне связи. Возьмите из ячейки ${+ci + 1}.`)}</div></div>`;
 }
 
@@ -1423,8 +1481,8 @@ document.addEventListener('click', e => {
   else if (id === 'openAlarm') { const k = sheetKey; sheetKey = null; openAlarm(k); }
   else if (id === 'openCell') { const i = +sheetKey.split('|')[0]; sheetKey = null; openEditor(i); }
   else if (d.cell) openEditor(+d.cell);
-  else if (id === 'aTaken') { markTaken(alarmKey, hhmm(nowMin())); return; }
-  else if (id === 'aSnooze') { snoozeNow(alarmKey); return; }
+  else if (id === 'aTaken') { const g = alarmGroup(); markTakenAll(g.length ? g : [alarmKey], hhmm(nowMin())); return; }
+  else if (id === 'aSnooze') { const g = alarmGroup(); snoozeAll(g.length ? g : [alarmKey]); return; }
   else if (d.form) { draft.c.form = d.form; fixMethod(draft.c); }
   else if (d.amt) { const c = draft.c, stp = c.form === 'tablet' || isG(c) ? 0.5 : 1; c.amount = Math.max(stp, Math.min(maxAmt(c), c.amount + stp * +d.amt)); }
   else if (d.gunit) { draft.c.grams = d.gunit === '1'; draft.c.amount = draft.c.grams ? 2.5 : 1; }
